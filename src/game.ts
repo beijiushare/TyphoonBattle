@@ -53,11 +53,13 @@ export class Game {
   private shotTex!: Texture;
 
   state: 'idle' | 'running' | 'paused' | 'over' = 'idle';
+  private camScale = 1;
+  private paperSprite!: TilingSprite;
 
   private t = 0;
   private player = {
-    x: C.W / 2,
-    y: C.H / 2,
+    x: C.WORLD_W / 2,
+    y: C.WORLD_H / 2,
     hp: C.PLAYER.maxHp,
     maxHp: C.PLAYER.maxHp,
     invuln: 0,
@@ -116,21 +118,41 @@ export class Game {
   }
 
   layout(): void {
-    const s = Math.min(this.app.screen.width / C.W, this.app.screen.height / C.H);
-    this.world.scale.set(s);
+    this.camScale = this.app.screen.height / C.VIEW_H;
+    this.world.scale.set(this.camScale);
+    const half = this.viewHalf();
+    this.paperSprite.width = half.w * 2 + 8;
+    this.paperSprite.height = half.h * 2 + 8;
+    this.camera();
+  }
+
+  private camera(): void {
     this.world.position.set(
-      (this.app.screen.width - C.W * s) / 2,
-      (this.app.screen.height - C.H * s) / 2,
+      this.app.screen.width / 2 - this.player.x * this.camScale,
+      this.app.screen.height / 2 - this.player.y * this.camScale,
     );
+    const half = this.viewHalf();
+    const left = this.player.x - half.w - 4;
+    const top = this.player.y - half.h - 4;
+    this.paperSprite.x = left;
+    this.paperSprite.y = top;
+    this.paperSprite.tilePosition.set(left, top);
+  }
+
+  private viewHalf(): { w: number; h: number } {
+    return {
+      w: this.app.screen.width / (2 * this.camScale),
+      h: this.app.screen.height / (2 * this.camScale),
+    };
   }
 
   private drawBackdrop(): void {
-    const paper = new TilingSprite({ texture: this.paper, width: C.W, height: C.H });
-    this.bg.addChild(paper);
+    this.paperSprite = new TilingSprite({ texture: this.paper, width: C.W, height: C.H });
+    this.bg.addChild(this.paperSprite);
 
     const g = new Graphics();
-    g.rect(0, 0, C.W, C.H).stroke({ width: 40, color: 0x5c4126, alpha: 0.18 });
-    g.rect(0, 0, C.W, C.H).stroke({ width: 2, color: 0x5c4126, alpha: 0.35 });
+    g.rect(0, 0, C.WORLD_W, C.WORLD_H).stroke({ width: 60, color: 0x5c4126, alpha: 0.16 });
+    g.rect(0, 0, C.WORLD_W, C.WORLD_H).stroke({ width: 3, color: 0x5c4126, alpha: 0.35 });
     this.bg.addChild(g);
   }
 
@@ -260,7 +282,7 @@ export class Game {
       this.shots.push({ alive: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, spr });
     }
 
-    for (let i = 0; i < 360; i++) {
+    for (let i = 0; i < 760; i++) {
       const spr = new Sprite(this.orbTexEnergy);
       spr.anchor.set(0.5);
       spr.visible = false;
@@ -309,8 +331,8 @@ export class Game {
   reset(): void {
     this.t = 0;
     this.state = 'idle';
-    this.player.x = C.W / 2;
-    this.player.y = C.H / 2;
+    this.player.x = C.WORLD_W / 2;
+    this.player.y = C.WORLD_H / 2;
     this.player.hp = C.PLAYER.maxHp;
     this.player.maxHp = C.PLAYER.maxHp;
     this.player.invuln = 0;
@@ -380,7 +402,9 @@ export class Game {
     this.reset();
     this.state = 'running';
     this.playerSpr.visible = true;
+    this.playerShadow.visible = true;
     this.playerSpr.gotoAndPlay(0);
+    for (let i = 0; i < 14; i++) this.spawnEnemy();
   }
 
   update(dt: number): void {
@@ -432,8 +456,8 @@ export class Game {
     }
 
     const sp = C.PLAYER.speed * slow;
-    this.player.x = C.clamp(this.player.x + ix * sp * dt, 26, C.W - 26);
-    this.player.y = C.clamp(this.player.y + iy * sp * dt, 60, C.H - 26);
+    this.player.x = C.clamp(this.player.x + ix * sp * dt, 26, C.WORLD_W - 26);
+    this.player.y = C.clamp(this.player.y + iy * sp * dt, 60, C.WORLD_H - 26);
   }
 
   private pullByWind(dt: number): void {
@@ -445,8 +469,8 @@ export class Game {
       const pullR = 110 + e.def.tier * 30;
       if (d > 1 && d < pullR) {
         const f = (24 + e.def.tier * 10) * dt * (1 - d / pullR);
-        this.player.x = C.clamp(this.player.x + (dx / d) * f, 26, C.W - 26);
-        this.player.y = C.clamp(this.player.y + (dy / d) * f, 60, C.H - 26);
+        this.player.x = C.clamp(this.player.x + (dx / d) * f, 26, C.WORLD_W - 26);
+        this.player.y = C.clamp(this.player.y + (dy / d) * f, 60, C.WORLD_H - 26);
       }
     }
   }
@@ -518,14 +542,14 @@ export class Game {
           uRange,
           C.UMBRELLA.dmgWind * uDmgMul,
           C.UMBRELLA.dmgWater * uDmgMul,
-          1,
+          3,
         );
       }
     }
 
     const bRange = Math.min(C.BOOT.rangeMax, C.BOOT.range + this.umbrellaRangeBonus);
     const bDmgMul = 1 + this.bootBonus;
-    const bPierce = 1;
+    const bPierce = 2;
 
     this.bootFire -= dt;
     while (this.bootFire <= 0) {
@@ -634,7 +658,7 @@ export class Game {
       b.y += b.vy * dt;
       b.traveled += b.speed * dt;
 
-      if (b.traveled > b.range || b.x < -200 || b.x > C.W + 200 || b.y < -200 || b.y > C.H + 200) {
+      if (b.traveled > b.range || b.x < -200 || b.x > C.WORLD_W + 200 || b.y < -200 || b.y > C.WORLD_H + 200) {
         this.killBullet(b);
         continue;
       }
@@ -682,7 +706,7 @@ export class Game {
       s.spr.x = s.x;
       s.spr.y = s.y;
 
-      if (s.life <= 0 || s.x < -50 || s.x > C.W + 50 || s.y < -50 || s.y > C.H + 50) {
+      if (s.life <= 0 || s.x < -50 || s.x > C.WORLD_W + 50 || s.y < -50 || s.y > C.WORLD_H + 50) {
         s.alive = false;
         s.spr.visible = false;
         continue;
@@ -733,8 +757,8 @@ export class Game {
       const dist = C.rand(0, 18);
       o.alive = true;
       o.kind = Math.random() < C.ORB.healChance ? 'heal' : 'energy';
-      o.x = C.clamp(x + Math.cos(ang) * dist, 20, C.W - 20);
-      o.y = C.clamp(y + Math.sin(ang) * dist, 20, C.H - 20);
+      o.x = C.clamp(x + Math.cos(ang) * dist, 20, C.WORLD_W - 20);
+      o.y = C.clamp(y + Math.sin(ang) * dist, 20, C.WORLD_H - 20);
       o.life = C.ORB.life;
       o.bob = C.rand(0, Math.PI * 2);
       o.spr.texture = o.kind === 'heal' ? this.orbTexHeal : this.orbTexEnergy;
@@ -792,8 +816,8 @@ export class Game {
     const dx = p.x - fromX;
     const dy = p.y - fromY;
     const d = Math.hypot(dx, dy) || 1;
-    p.x = C.clamp(p.x + (dx / d) * C.PLAYER.knock, 26, C.W - 26);
-    p.y = C.clamp(p.y + (dy / d) * C.PLAYER.knock, 60, C.H - 26);
+    p.x = C.clamp(p.x + (dx / d) * C.PLAYER.knock, 26, C.WORLD_W - 26);
+    p.y = C.clamp(p.y + (dy / d) * C.PLAYER.knock, 60, C.WORLD_H - 26);
     this.ui.onHurt();
 
     if (p.hp <= 0) {
@@ -962,31 +986,11 @@ export class Game {
     if (!e) return;
 
     const def = this.pickTier();
-    const m = C.SPAWN.margin;
-    let x = 0;
-    let y = 0;
-    if (def.kind === 'wind') {
-      const side = Math.floor(Math.random() * 4);
-      if (side === 0) {
-        x = C.rand(-m, C.W + m);
-        y = -m;
-      } else if (side === 1) {
-        x = C.W + m;
-        y = C.rand(-m, C.H + m);
-      } else if (side === 2) {
-        x = C.rand(-m, C.W + m);
-        y = C.H + m;
-      } else {
-        x = -m;
-        y = C.rand(-m, C.H + m);
-      }
-    } else {
-      for (let tries = 0; tries < 12; tries++) {
-        x = C.rand(90, C.W - 90);
-        y = C.rand(110, C.H - 90);
-        if (Math.hypot(x - this.player.x, y - this.player.y) >= 200) break;
-      }
-    }
+    const half = this.viewHalf();
+    const radius = Math.max(half.w, half.h) + 80 + C.rand(0, 160);
+    const ang = C.rand(0, Math.PI * 2);
+    const x = C.clamp(this.player.x + Math.cos(ang) * radius, 20, C.WORLD_W - 20);
+    const y = C.clamp(this.player.y + Math.sin(ang) * radius, 20, C.WORLD_H - 20);
 
     let wi = Math.floor(this.t / C.SCORE.window);
     if (this.t - wi * C.SCORE.window > C.SCORE.window - C.SCORE.edgeCarry) wi += 1;
@@ -1063,6 +1067,8 @@ export class Game {
       e.barFill.y = top;
       e.barFill.scale.set(Math.max(0, w * ratio), h);
     }
+
+    this.camera();
   }
 
   private checkShop(): void {

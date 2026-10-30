@@ -102,10 +102,10 @@ export const ECON = {
 };
 
 export const SPAWN = {
-  base: 2.2,
-  min: 0.24,
-  ramp: 170,
-  cap: 220,
+  base: 0.22,
+  min: 0.05,
+  ramp: 1000,
+  cap: 380,
   hpPerSec: 1 / 60,
   windRatioEarly: 0.7,
   windRatioLate: 0.5,
@@ -119,9 +119,9 @@ export const SCORE = {
   edgeCarry: 2,
 };
 
-export const CARD_EVERY = 60;
+export const CARD_EVERY = 45;
 
-export const MAX_ENEMIES = 260;
+export const MAX_ENEMIES = 420;
 export const MAX_BULLETS = 420;
 
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -148,8 +148,8 @@ export interface TierDef {
 }
 
 export const TIERS: TierDef[] = [
-  { key: 'rain1', kind: 'rain', tier: 1, hp: 4, speed: 58, dmg: 5, r: 46, visual: 112, drop: 1, unlock: 0, weight: 9 },
-  { key: 'wind1', kind: 'wind', tier: 1, hp: 4, speed: 128, dmg: 6, r: 24, visual: 74, drop: 1, unlock: 0, weight: 10 },
+  { key: 'rain1', kind: 'rain', tier: 1, hp: 4, speed: 58, dmg: 3, r: 46, visual: 112, drop: 1, unlock: 0, weight: 9 },
+  { key: 'wind1', kind: 'wind', tier: 1, hp: 4, speed: 128, dmg: 4, r: 24, visual: 74, drop: 1, unlock: 0, weight: 10 },
   { key: 'wind2', kind: 'wind', tier: 2, hp: 45, speed: 148, dmg: 9, r: 32, visual: 100, drop: 3, unlock: 40, weight: 7 },
   { key: 'rain2', kind: 'rain', tier: 2, hp: 80, speed: 42, dmg: 8, r: 66, visual: 165, drop: 4, unlock: 70, weight: 6 },
   {
@@ -171,7 +171,7 @@ export const TIERS: TierDef[] = [
 ];
 
 export const ORB = {
-  healChance: 1 / 20,
+  healChance: 1 / 15,
   healAmount: 10,
   life: 18,
   pickupR: 30,
@@ -278,3 +278,7 @@ export const SHOP: ShopDef[] = [
     limit: 2,
   },
 ];
+
+export const WORLD_W = 2560;
+export const WORLD_H = 1600;
+export const VIEW_H = 720;
