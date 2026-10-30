@@ -718,7 +718,7 @@ export class Game {
         const dmg = (s as EnemyShot & { dmg: number }).dmg ?? 5;
         s.alive = false;
         s.spr.visible = false;
-        this.hurtPlayer(dmg, s.x, s.y);
+        this.hurtPlayer(dmg);
       }
     }
   }
@@ -807,17 +807,11 @@ export class Game {
     }
   }
 
-  private hurtPlayer(dmg: number, fromX: number, fromY: number): void {
+  private hurtPlayer(dmg: number): void {
     const p = this.player;
     p.hp -= dmg;
     p.invuln = C.PLAYER.invuln;
     p.lastHit = this.t;
-
-    const dx = p.x - fromX;
-    const dy = p.y - fromY;
-    const d = Math.hypot(dx, dy) || 1;
-    p.x = C.clamp(p.x + (dx / d) * C.PLAYER.knock, 26, C.WORLD_W - 26);
-    p.y = C.clamp(p.y + (dy / d) * C.PLAYER.knock, 60, C.WORLD_H - 26);
     this.ui.onHurt();
 
     if (p.hp <= 0) {
@@ -836,7 +830,7 @@ export class Game {
       if (dx * dx + dy * dy > rr * rr) continue;
       if (e.hitReady > this.t || p.invuln > 0) continue;
       e.hitReady = this.t + 0.6;
-      this.hurtPlayer(e.def.dmg, e.x, e.y);
+      this.hurtPlayer(e.def.dmg);
       return;
     }
   }
