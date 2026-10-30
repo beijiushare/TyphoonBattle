@@ -129,12 +129,6 @@ export class Game {
     this.bg.addChild(paper);
 
     const g = new Graphics();
-    for (let x = 0; x <= C.W; x += 64) {
-      g.moveTo(x, 0).lineTo(x, C.H).stroke({ width: 1, color: 0x8a6b45, alpha: 0.14 });
-    }
-    for (let y = 0; y <= C.H; y += 64) {
-      g.moveTo(0, y).lineTo(C.W, y).stroke({ width: 1, color: 0x8a6b45, alpha: 0.14 });
-    }
     g.rect(0, 0, C.W, C.H).stroke({ width: 40, color: 0x5c4126, alpha: 0.18 });
     g.rect(0, 0, C.W, C.H).stroke({ width: 2, color: 0x5c4126, alpha: 0.35 });
     this.bg.addChild(g);
