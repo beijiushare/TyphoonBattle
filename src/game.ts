@@ -4,7 +4,6 @@ import {
   Container,
   Graphics,
   Sprite,
-  Text,
   Texture,
   TilingSprite,
 } from 'pixi.js';
@@ -15,6 +14,7 @@ import { buildTextures, type Textures } from './textures';
 import { ScoreTracker } from './systems/score';
 import { ShopModel } from './systems/shop';
 import { Camera } from './systems/camera';
+import { buildPools as createPools, PLAYER_SCALE } from './entities/pools';
 
 export interface UiHooks {
   onShop(view: ShopView, buy: (id: string) => ShopView, close: () => void): void;
@@ -23,7 +23,6 @@ export interface UiHooks {
 }
 
 const CELL = 64;
-const PLAYER_SCALE = 0.62;
 
 export class Game {
   readonly app: Application;
@@ -47,10 +46,8 @@ export class Game {
   private playerShadow!: Sprite;
   private playerBarBg!: Sprite;
   private playerBarFill!: Sprite;
-  private barTex!: Texture;
   private orbTexEnergy!: Texture;
   private orbTexHeal!: Texture;
-  private shotTex!: Texture;
 
   state: 'idle' | 'running' | 'paused' | 'over' = 'idle';
   private paperSprite!: TilingSprite;
@@ -135,194 +132,25 @@ export class Game {
     this.bg.addChild(g);
   }
 
-  private flatTex(w: number, h: number, color: number): Texture {
-    const g = new Graphics();
-    g.roundRect(0, 0, w, h, Math.min(w, h) / 2).fill(color);
-    const t = this.app.renderer.generateTexture({ target: g, resolution: 2 });
-    g.destroy();
-    return t;
-  }
-
-  private dotTex(radius: number, color: number, outline: number): Texture {
-    const g = new Graphics();
-    g.circle(radius + 2, radius + 2, radius + 1.5).fill(outline);
-    g.circle(radius + 2, radius + 2, radius).fill(color);
-    g.circle(radius * 0.6, radius * 0.6, radius * 0.35).fill({ color: 0xffffff, alpha: 0.5 });
-    const t = this.app.renderer.generateTexture({ target: g, resolution: 2 });
-    g.destroy();
-    return t;
-  }
-
   private buildPools(): void {
-    this.barTex = this.flatTex(1, 1, 0xffffff);
-    this.orbTexEnergy = this.dotTex(C.ORB.radius, 0x3b82c4, 0x14161c);
-    this.orbTexHeal = this.dotTex(C.ORB.radius, 0xd84343, 0x14161c);
-    this.shotTex = this.dotTex(7, 0xffffff, 0x1a2430);
-
-    const shadowG = new Graphics();
-    shadowG.ellipse(0, 0, 24, 8).fill({ color: 0x3a2b1a, alpha: 0.22 });
-    const shadowTex = this.app.renderer.generateTexture({ target: shadowG, resolution: 2 });
-    shadowG.destroy();
-    this.playerShadow = new Sprite(shadowTex);
-    this.playerShadow.anchor.set(0.5);
-    this.top.addChild(this.playerShadow);
-
-    const people: FrameSet = this.assets.people;
-    this.playerSpr = new AnimatedSprite(people.frames);
-    this.playerSpr.anchor.set(0.5, 0.86);
-    this.playerSpr.animationSpeed = 0.2;
-    this.playerSpr.scale.set(PLAYER_SCALE);
-    this.playerSpr.play();
-    this.top.addChild(this.playerSpr);
-
-    this.playerBarBg = new Sprite(this.barTex);
-    this.playerBarBg.anchor.set(0, 0.5);
-    this.playerBarBg.tint = 0x3a2b1a;
-    this.playerBarBg.alpha = 0.45;
-    this.bars.addChild(this.playerBarBg);
-
-    this.playerBarFill = new Sprite(this.barTex);
-    this.playerBarFill.anchor.set(0, 0.5);
-    this.playerBarFill.tint = 0x8f3a2e;
-    this.bars.addChild(this.playerBarFill);
-
-    for (let i = 0; i < C.MAX_ENEMIES; i++) {
-      const spr = new AnimatedSprite(this.assets.rain1.frames);
-      spr.anchor.set(0.5);
-      spr.visible = false;
-      this.layer.addChild(spr);
-
-      const barBg = new Sprite(this.barTex);
-      barBg.anchor.set(0, 0.5);
-      barBg.tint = 0x3a2b1a;
-      barBg.alpha = 0.45;
-      barBg.visible = false;
-      this.bars.addChild(barBg);
-
-      const barFill = new Sprite(this.barTex);
-      barFill.anchor.set(0, 0.5);
-      barFill.tint = 0x8f3a2e;
-      barFill.visible = false;
-      this.bars.addChild(barFill);
-
-      this.enemies.push({
-        alive: false,
-        kind: 'wind',
-        def: C.TIERS[0],
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        hp: 1,
-        maxHp: 1,
-        r: 20,
-        wobble: 0,
-        growT: 0,
-        winIdx: 0,
-        hitReady: -99,
-        shootT: 0,
-        flash: 0,
-        spr,
-        barBg,
-        barFill,
-      });
-    }
-
-    for (let i = 0; i < C.MAX_BULLETS; i++) {
-      const spr = new Sprite(this.assets.umbrella);
-      spr.anchor.set(0.5);
-      spr.visible = false;
-      this.layer.addChild(spr);
-      this.bullets.push({
-        alive: false,
-        kind: 'umbrella',
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        dmgWind: 0,
-        dmgWater: 0,
-        speed: 0,
-        range: 0,
-        traveled: 0,
-        r: 6,
-        pierce: 0,
-        spin: 0,
-        hits: new Set<Enemy>(),
-        spr,
-      });
-    }
-
-    for (let i = 0; i < 120; i++) {
-      const spr = new Sprite(this.shotTex);
-      spr.anchor.set(0.5);
-      spr.visible = false;
-      this.layer.addChild(spr);
-      this.shots.push({ alive: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, spr });
-    }
-
-    for (let i = 0; i < 760; i++) {
-      const spr = new Sprite(this.orbTexEnergy);
-      spr.anchor.set(0.5);
-      spr.visible = false;
-      this.layer.addChild(spr);
-      this.orbs.push({ alive: false, kind: 'energy', x: 0, y: 0, life: 0, bob: 0, spr });
-    }
-
-    for (let i = 0; i < 8; i++) {
-      const spr = new Sprite(this.tex.ring);
-      spr.anchor.set(0.5);
-      spr.visible = false;
-      spr.blendMode = 'add';
-      this.fx.addChild(spr);
-      this.effects.push({
-        alive: false,
-        kind: 'ring',
-        x: 0,
-        y: 0,
-        age: 0,
-        dur: 0.5,
-        from: 0.2,
-        to: 3.2,
-        spr,
-      });
-    }
-    for (let i = 0; i < 2; i++) {
-      const spr = new Sprite(this.tex.house);
-      spr.anchor.set(0.5);
-      spr.visible = false;
-      spr.tint = 0xb5721c;
-      this.fx.addChild(spr);
-      this.effects.push({
-        alive: false,
-        kind: 'house',
-        x: 0,
-        y: 0,
-        age: 0,
-        dur: 0.8,
-        from: 2.4,
-        to: 1,
-        spr,
-      });
-    }
-
-    for (let i = 0; i < 56; i++) {
-      const spr = new Text({
-        text: '',
-        style: {
-          fontFamily: 'Arial Black, Arial, sans-serif',
-          fontSize: 18,
-          fontWeight: '700',
-          fill: 0x8a5a12,
-          stroke: { color: 0xfff6df, width: 4 },
-        },
-      });
-      spr.anchor.set(0.5);
-      spr.resolution = 2;
-      spr.visible = false;
-      this.fx.addChild(spr);
-      this.texts.push({ alive: false, x: 0, y: 0, age: 0, dur: 0.9, spr });
-    }
+    const p = createPools(this.app, this.assets, this.tex, {
+      layer: this.layer,
+      top: this.top,
+      bars: this.bars,
+      fx: this.fx,
+    });
+    this.orbTexEnergy = p.orbTexEnergy;
+    this.orbTexHeal = p.orbTexHeal;
+    this.playerSpr = p.playerSpr;
+    this.playerShadow = p.playerShadow;
+    this.playerBarBg = p.playerBarBg;
+    this.playerBarFill = p.playerBarFill;
+    this.enemies = p.enemies;
+    this.bullets = p.bullets;
+    this.shots = p.shots;
+    this.orbs = p.orbs;
+    this.effects = p.effects;
+    this.texts = p.texts;
   }
 
   reset(): void {
