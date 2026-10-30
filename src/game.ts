@@ -17,6 +17,8 @@ import { Camera } from './systems/camera';
 import { buildPools as createPools, PLAYER_SCALE } from './entities/pools';
 import { updateEnemies, updateShots, updateTexts } from './world/updates';
 import { frameSetFor, pickTier, ringPosition } from './world/spawn';
+import { createWeapons, updateWeapons } from './world/weapons';
+import { updateBullets, updateOrbs } from './world/combat';
 
 export interface UiHooks {
   onShop(view: ShopView, buy: (id: string) => ShopView, close: () => void): void;
@@ -67,16 +69,7 @@ export class Game {
     dy: 1,
   };
 
-  private umbrellaSlots = 1;
-  private umbrellaArms = 1;
-  private umbrellaBonus = 0;
-  private umbrellaRangeBonus = 0;
-  private umbrellaRot = 0;
-  private umbrellaFire = 0;
-
-  private bootSlots = 1;
-  private bootBonus = 0;
-  private bootFire = 0;
+  private weapons = createWeapons();
 
   private houseCd = 0;
   private houseLv = 1;
@@ -167,15 +160,7 @@ export class Game {
     this.player.dx = 0;
     this.player.dy = 1;
 
-    this.umbrellaSlots = 1;
-    this.umbrellaArms = 1;
-    this.umbrellaBonus = 0;
-    this.umbrellaRangeBonus = 0;
-    this.umbrellaRot = 0;
-    this.umbrellaFire = 0;
-    this.bootSlots = 1;
-    this.bootBonus = 0;
-    this.bootFire = 0;
+    this.weapons = createWeapons();
     this.houseCd = 0;
     this.houseLv = 1;
 
@@ -321,58 +306,10 @@ export class Game {
   }
 
   private updateWeapons(dt: number): void {
-    this.umbrellaRot += C.UMBRELLA.spin * dt;
-    const p = this.player;
-    const uRange = Math.min(
-      C.UMBRELLA.rangeMax,
-      C.UMBRELLA.range + this.umbrellaRangeBonus,
+    updateWeapons(dt, this.player, this.weapons, (x, y) => this.nearestEnemy(x, y), (...args) =>
+      this.spawnBullet(...args),
     );
-    const uDmgMul = 1 + this.umbrellaBonus;
-
-    this.umbrellaFire -= dt;
-    if (this.umbrellaFire <= 0) {
-      this.umbrellaFire += C.UMBRELLA.cd / this.umbrellaSlots;
-      for (let k = 0; k < this.umbrellaArms; k++) {
-        const ang = this.umbrellaRot + (k * Math.PI * 2) / this.umbrellaArms;
-        this.spawnBullet(
-          'umbrella',
-          p.x,
-          p.y,
-          ang,
-          C.UMBRELLA.speed,
-          uRange,
-          C.UMBRELLA.dmgWind * uDmgMul,
-          C.UMBRELLA.dmgWater * uDmgMul,
-          3,
-        );
-      }
-    }
-
-    const bRange = Math.min(C.BOOT.rangeMax, C.BOOT.range + this.umbrellaRangeBonus);
-    const bDmgMul = 1 + this.bootBonus;
-    const bPierce = 2;
-
-    this.bootFire -= dt;
-    while (this.bootFire <= 0) {
-      this.bootFire += C.BOOT.cd / this.bootSlots;
-      const target = this.nearestEnemy(p.x, p.y);
-      const baseAng = target
-        ? Math.atan2(target.y - p.y, target.x - p.x)
-        : Math.atan2(p.dy, p.dx);
-      this.spawnBullet(
-        'boot',
-        p.x,
-        p.y,
-        baseAng + C.rand(-C.BOOT.spread, C.BOOT.spread),
-        C.BOOT.speed,
-        bRange,
-        C.BOOT.dmgWind * bDmgMul,
-        C.BOOT.dmgWater * bDmgMul,
-        bPierce,
-      );
-    }
   }
-
   private nearestEnemy(x: number, y: number): Enemy | null {
     let best: Enemy | null = null;
     let bestD = Infinity;
@@ -453,58 +390,10 @@ export class Game {
   }
 
   private updateBullets(dt: number): void {
-    for (const b of this.bullets) {
-      if (!b.alive) continue;
-      b.x += b.vx * dt;
-      b.y += b.vy * dt;
-      b.traveled += b.speed * dt;
-
-      if (b.traveled > b.range || b.x < -200 || b.x > C.WORLD_W + 200 || b.y < -200 || b.y > C.WORLD_H + 200) {
-        this.killBullet(b);
-        continue;
-      }
-
-      const gx = Math.floor(b.x / CELL);
-      const gy = Math.floor(b.y / CELL);
-      for (let ox = -1; ox <= 1 && b.alive; ox++) {
-        for (let oy = -1; oy <= 1 && b.alive; oy++) {
-          const arr = this.grid.get((gx + ox + 64) * 512 + (gy + oy + 64));
-          if (!arr) continue;
-          for (const e of arr) {
-            if (!e.alive || b.hits.has(e)) continue;
-            const rr = e.r + b.r;
-            const dx = e.x - b.x;
-            const dy = e.y - b.y;
-            if (dx * dx + dy * dy > rr * rr) continue;
-            b.hits.add(e);
-            const dmg = e.kind === 'wind' ? b.dmgWind : b.dmgWater;
-            this.damageEnemy(e, dmg);
-            if (b.pierce > 0) {
-              b.pierce -= 1;
-            } else {
-              this.killBullet(b);
-            }
-            break;
-          }
-        }
-      }
-
-      if (!b.alive) continue;
-      if (b.spin) b.spr.rotation += b.spin * dt;
-      b.spr.x = b.x;
-      b.spr.y = b.y;
-      const fade = 1 - Math.pow(b.traveled / b.range, 3);
-      b.spr.alpha = Math.max(0.2, fade);
-    }
+    updateBullets(dt, this.bullets, this.grid, (e, dmg) => this.damageEnemy(e, dmg));
   }
-
   private updateShots(dt: number): void {
     updateShots(dt, this.shots, this.player, (dmg) => this.hurtPlayer(dmg));
-  }
-
-  private killBullet(b: Bullet): void {
-    b.alive = false;
-    b.spr.visible = false;
   }
 
   private damageEnemy(e: Enemy, dmg: number): void {
@@ -546,43 +435,11 @@ export class Game {
   }
 
   private updateOrbs(dt: number): void {
-    const p = this.player;
-    for (const o of this.orbs) {
-      if (!o.alive) continue;
-      o.life -= dt;
-      o.bob += dt * 4;
-      const dx = p.x - o.x;
-      const dy = p.y - o.y;
-      const d = Math.hypot(dx, dy);
-
-      if (d < 90) {
-        const pull = (1 - d / 90) * 260 * dt;
-        o.x += (dx / (d || 1)) * pull;
-        o.y += (dy / (d || 1)) * pull;
-      }
-
-      if (d < C.ORB.pickupR) {
-        o.alive = false;
-        o.spr.visible = false;
-        if (o.kind === 'heal') {
-          this.player.hp = Math.min(this.player.maxHp, this.player.hp + C.ORB.healAmount);
-        } else {
-          this.energy += 1;
-        }
-        continue;
-      }
-
-      if (o.life <= 0) {
-        o.alive = false;
-        o.spr.visible = false;
-        continue;
-      }
-      o.spr.x = o.x;
-      o.spr.y = o.y + Math.sin(o.bob) * 2;
-      o.spr.alpha = o.life < 3 ? Math.max(0.4, o.life / 3) : 1;
-    }
+    updateOrbs(dt, this.orbs, this.player, (kind) => {
+      if (kind === 'heal') this.player.hp = Math.min(this.player.maxHp, this.player.hp + C.ORB.healAmount);
+      else this.energy += 1;
+    });
   }
-
   private hurtPlayer(dmg: number): void {
     const p = this.player;
     p.hp -= dmg;
@@ -855,22 +712,22 @@ export class Game {
         p.hp = Math.min(p.maxHp, p.hp + 20);
         break;
       case 'torch':
-        this.umbrellaRangeBonus += 30;
+        this.weapons.rangeBonus += 30;
         break;
       case 'rib':
-        this.umbrellaBonus += 0.2;
+        this.weapons.umbrellaBonus += 0.2;
         break;
       case 'sole':
-        this.bootBonus += 0.2;
+        this.weapons.bootBonus += 0.2;
         break;
       case 'arms':
-        this.umbrellaArms = Math.min(4, this.umbrellaArms + 1);
+        this.weapons.umbrellaArms = Math.min(4, this.weapons.umbrellaArms + 1);
         break;
       case 'umbSlot':
-        this.umbrellaSlots = Math.min(3, this.umbrellaSlots + 1);
+        this.weapons.umbrellaSlots = Math.min(3, this.weapons.umbrellaSlots + 1);
         break;
       case 'bootSlot':
-        this.bootSlots = Math.min(3, this.bootSlots + 1);
+        this.weapons.bootSlots = Math.min(3, this.weapons.bootSlots + 1);
         break;
     }
   }
@@ -896,8 +753,8 @@ export class Game {
       nextShop: Math.max(0, this.nextShopAt - this.t),
       windowRate: this.stats.liveWindow(this.t),
       lastRate: this.stats.lastRate,
-      umbrella: this.umbrellaSlots,
-      boots: this.bootSlots,
+      umbrella: this.weapons.umbrellaSlots,
+      boots: this.weapons.bootSlots,
       houseCd: this.houseCd,
       houseLv: this.houseLv,
     };
