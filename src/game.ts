@@ -14,12 +14,13 @@ import { buildTextures, type Textures } from './textures';
 import { ScoreTracker } from './systems/score';
 import { ShopModel } from './systems/shop';
 import { Camera } from './systems/camera';
-import { buildPools as createPools, PLAYER_SCALE } from './entities/pools';
+import { buildPools as createPools } from './entities/pools';
 import { updateEnemies, updateShots, updateTexts } from './world/updates';
 import { createWeapons, updateWeapons } from './world/weapons';
 import { freeEnemy, spawnInto } from './world/enemy';
 import { spawnEffect, spawnFloat, updateEffects } from './world/effects';
 import { houseBlast } from './world/house';
+import { syncSprites } from './render/sync';
 import { updateBullets, updateOrbs } from './world/combat';
 
 export interface UiHooks {
@@ -524,46 +525,17 @@ export class Game {
     this.aliveCount++;
   }
   private syncSprites(): void {
-    const p = this.player;
-    this.playerSpr.x = p.x;
-    this.playerSpr.y = p.y;
-    this.playerSpr.alpha = p.invuln > 0 ? (Math.sin(this.t * 45) > 0 ? 0.45 : 1) : 1;
-    this.playerSpr.scale.x = p.dx > 0.02 ? -PLAYER_SCALE : PLAYER_SCALE;
-
-    const pw = 62;
-    const ph = 3;
-    this.playerBarBg.visible = true;
-    this.playerBarBg.x = p.x - pw / 2 - 1;
-    this.playerBarBg.y = p.y - 74;
-    this.playerBarBg.scale.set(pw + 2, ph + 2);
-    this.playerBarFill.visible = true;
-    this.playerBarFill.x = p.x - pw / 2;
-    this.playerBarFill.y = p.y - 74;
-    this.playerBarFill.scale.set(Math.max(0, pw * (p.hp / p.maxHp)), ph);
-
-    for (const e of this.enemies) {
-      if (!e.alive) continue;
-      e.spr.x = e.x;
-      e.spr.y = e.y;
-      e.spr.tint = e.flash > 0 ? 0xffd0d0 : 0xffffff;
-
-      const w = Math.min(96, Math.max(30, e.r * 1.4));
-      const h = 2;
-      const top = e.y - e.r * 0.95 - 10;
-      const ratio = Math.max(0, e.hp / e.maxHp);
-      e.barBg.visible = true;
-      e.barBg.x = e.x - w / 2 - 1;
-      e.barBg.y = top;
-      e.barBg.scale.set(w + 2, h + 1);
-      e.barFill.visible = true;
-      e.barFill.x = e.x - w / 2;
-      e.barFill.y = top;
-      e.barFill.scale.set(Math.max(0, w * ratio), h);
-    }
-
-    this.camera();
+    syncSprites(
+      this.t,
+      this.player,
+      this.playerSpr,
+      this.playerShadow,
+      this.playerBarBg,
+      this.playerBarFill,
+      this.enemies,
+      () => this.camera(),
+    );
   }
-
   private checkShop(): void {
     if (this.t < this.nextShopAt) return;
     this.nextShopAt += C.CARD_EVERY;
