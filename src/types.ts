@@ -1,4 +1,4 @@
-import type { AnimatedSprite, Sprite } from 'pixi.js';
+import type { AnimatedSprite, Sprite, Text } from 'pixi.js';
 import type { TierDef } from './config';
 
 export type EnemyKind = 'wind' | 'rain';
@@ -110,4 +110,12 @@ export interface RunResult {
   spawned: number;
   rate: number;
   score: number;
+}
+export interface FloatText {
+  alive: boolean;
+  x: number;
+  y: number;
+  age: number;
+  dur: number;
+  spr: Text;
 }

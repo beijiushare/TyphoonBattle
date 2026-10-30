@@ -4,12 +4,13 @@ import {
   Container,
   Graphics,
   Sprite,
+  Text,
   Texture,
   TilingSprite,
 } from 'pixi.js';
 import * as C from './config';
 import type { GameAssets, FrameSet } from './assets';
-import type { Bullet, Effect, Enemy, EnemyShot, HudState, Orb, RunResult, ShopView } from './types';
+import type { Bullet, Effect, Enemy, EnemyShot, FloatText, HudState, Orb, RunResult, ShopView } from './types';
 import { buildTextures, type Textures } from './textures';
 
 interface Bucket {
@@ -42,6 +43,7 @@ export class Game {
   private shots: EnemyShot[] = [];
   private orbs: Orb[] = [];
   private effects: Effect[] = [];
+  private texts: FloatText[] = [];
 
   private playerSpr!: AnimatedSprite;
   private playerShadow!: Sprite;
@@ -326,6 +328,24 @@ export class Game {
         spr,
       });
     }
+
+    for (let i = 0; i < 56; i++) {
+      const spr = new Text({
+        text: '',
+        style: {
+          fontFamily: 'Arial Black, Arial, sans-serif',
+          fontSize: 18,
+          fontWeight: '700',
+          fill: 0x8a5a12,
+          stroke: { color: 0xfff6df, width: 4 },
+        },
+      });
+      spr.anchor.set(0.5);
+      spr.resolution = 2;
+      spr.visible = false;
+      this.fx.addChild(spr);
+      this.texts.push({ alive: false, x: 0, y: 0, age: 0, dur: 0.9, spr });
+    }
   }
 
   reset(): void {
@@ -389,6 +409,10 @@ export class Game {
       f.alive = false;
       f.spr.visible = false;
     }
+    for (const f of this.texts) {
+      f.alive = false;
+      f.spr.visible = false;
+    }
 
     this.playerSpr.visible = false;
     this.playerSpr.alpha = 1;
@@ -424,6 +448,7 @@ export class Game {
     this.contactDamage();
     this.updateOrbs(dt);
     this.updateEffects(dt);
+    this.updateTexts(dt);
     this.updateScore();
     this.updateSpawn(dt);
     this.syncSprites();
@@ -746,17 +771,18 @@ export class Game {
     if (b) b.k += 1;
     else this.buckets.set(e.winIdx, { a: 0, k: 1 });
 
-    this.dropOrbs(e.x, e.y, e.def.drop);
+    this.dropOrbs(e.x, e.y, e.def.drop, e.def.tier < 3);
+    this.spawnFloat(e.x, e.y - 12, `+${e.def.drop}`, e.def.tier >= 3 ? 0x1f6f8b : 0x8a5a12);
   }
 
-  private dropOrbs(x: number, y: number, count: number): void {
+  private dropOrbs(x: number, y: number, count: number, allowHeal: boolean): void {
     for (let i = 0; i < count; i++) {
       const o = this.orbs.find((cand) => !cand.alive);
       if (!o) return;
       const ang = C.rand(0, Math.PI * 2);
       const dist = C.rand(0, 18);
       o.alive = true;
-      o.kind = Math.random() < C.ORB.healChance ? 'heal' : 'energy';
+      o.kind = allowHeal && Math.random() < C.ORB.healChance ? 'heal' : 'energy';
       o.x = C.clamp(x + Math.cos(ang) * dist, 20, C.WORLD_W - 20);
       o.y = C.clamp(y + Math.sin(ang) * dist, 20, C.WORLD_H - 20);
       o.life = C.ORB.life;
@@ -885,6 +911,38 @@ export class Game {
       f.spr.scale.set(from);
       f.spr.tint = 0xb5721c;
       return;
+    }
+  }
+
+  private spawnFloat(x: number, y: number, text: string, color: number): void {
+    for (const f of this.texts) {
+      if (f.alive) continue;
+      f.alive = true;
+      f.x = x;
+      f.y = y;
+      f.age = 0;
+      f.dur = 0.9;
+      f.spr.text = text;
+      f.spr.style.fill = color;
+      f.spr.visible = true;
+      f.spr.alpha = 1;
+      f.spr.x = x;
+      f.spr.y = y;
+      return;
+    }
+  }
+
+  private updateTexts(dt: number): void {
+    for (const f of this.texts) {
+      if (!f.alive) continue;
+      f.age += dt;
+      const p = Math.min(1, f.age / f.dur);
+      f.spr.y = f.y - 46 * (1 - Math.pow(1 - p, 2));
+      f.spr.alpha = p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
+      if (f.age >= f.dur) {
+        f.alive = false;
+        f.spr.visible = false;
+      }
     }
   }
 
@@ -1032,7 +1090,7 @@ export class Game {
     this.playerSpr.scale.x = p.dx > 0.02 ? -PLAYER_SCALE : PLAYER_SCALE;
 
     const pw = 62;
-    const ph = 4;
+    const ph = 3;
     this.playerBarBg.visible = true;
     this.playerBarBg.x = p.x - pw / 2 - 1;
     this.playerBarBg.y = p.y - 74;
@@ -1049,13 +1107,13 @@ export class Game {
       e.spr.tint = e.flash > 0 ? 0xffd0d0 : 0xffffff;
 
       const w = Math.min(96, Math.max(30, e.r * 1.4));
-      const h = 3;
+      const h = 2;
       const top = e.y - e.r * 0.95 - 10;
       const ratio = Math.max(0, e.hp / e.maxHp);
       e.barBg.visible = true;
       e.barBg.x = e.x - w / 2 - 1;
       e.barBg.y = top;
-      e.barBg.scale.set(w + 2, h + 2);
+      e.barBg.scale.set(w + 2, h + 1);
       e.barFill.visible = true;
       e.barFill.x = e.x - w / 2;
       e.barFill.y = top;
