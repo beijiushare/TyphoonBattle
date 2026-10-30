@@ -16,8 +16,8 @@ import { ShopModel } from './systems/shop';
 import { Camera } from './systems/camera';
 import { buildPools as createPools, PLAYER_SCALE } from './entities/pools';
 import { updateEnemies, updateShots, updateTexts } from './world/updates';
-import { frameSetFor, pickTier, ringPosition } from './world/spawn';
 import { createWeapons, updateWeapons } from './world/weapons';
+import { freeEnemy, spawnInto } from './world/enemy';
 import { updateBullets, updateOrbs } from './world/combat';
 
 export interface UiHooks {
@@ -579,52 +579,12 @@ export class Game {
   }
 
   private spawnEnemy(): void {
-    let e: Enemy | null = null;
-    for (const cand of this.enemies) {
-      if (!cand.alive) {
-        e = cand;
-        break;
-      }
-    }
+    const e = freeEnemy(this.enemies);
     if (!e) return;
-
-    const def = pickTier(this.t);
-    const half = this.viewHalf();
-    const { x, y } = ringPosition(this.player.x, this.player.y, half.w, half.h);
-
     const wi = this.stats.addSpawn(this.t);
-
-    const hpMul = def.tier >= 2 ? 1 + this.t / 150 : 1;
-    e.alive = true;
-    e.def = def;
-    e.kind = def.kind;
-    e.x = x;
-    e.y = y;
-    e.hp = def.hp * hpMul;
-    e.maxHp = e.hp;
-    e.r = def.r * (def.tier >= 2 ? Math.sqrt(hpMul) : 1);
-    e.wobble = Math.random() * Math.PI * 2;
-    e.winIdx = wi;
-    e.hitReady = this.t + 0.4;
-    e.shootT = def.shootCd ? C.rand(0.8, def.shootCd) : 0;
-    e.flash = 0;
-    e.growT = 0;
-
-    const fs = frameSetFor(this.assets, def);
-    e.spr.textures = fs.frames;
-    e.spr.animationSpeed = def.tier === 3 ? 0.32 : 0.22;
-    const scl = def.visual / fs.w * (def.tier >= 2 ? Math.sqrt(hpMul) : 1);
-    e.spr.scale.set(scl);
-    e.spr.visible = true;
-    e.spr.alpha = 1;
-    e.spr.x = x;
-    e.spr.y = y;
-    e.spr.tint = 0xffffff;
-    e.spr.gotoAndPlay(Math.floor(Math.random() * fs.frames.length));
-
+    spawnInto(e, wi, this.assets, this.t, this.player, this.viewHalf());
     this.aliveCount++;
   }
-
   private syncSprites(): void {
     const p = this.player;
     this.playerSpr.x = p.x;
