@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <title>台风生存战</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="stage">
+      <div id="game"></div>
+      <div id="ui">
+        <div id="hud">
+          <div class="hud-left">
+            <div id="hpwrap">
+              <div id="hpfill"></div>
+              <div id="hpcap"></div>
+              <div id="hpghost"></div>
+            </div>
+            <div id="hpnum">100 / 100</div>
+          </div>
+          <div class="hud-center">
+            <div id="time">00:00</div>
+            <div id="nextcard">下次卡牌 60s</div>
+          </div>
+          <div class="hud-right">
+            <div id="gold">金币 0</div>
+            <div id="rate">击杀率 --</div>
+          </div>
+        </div>
+
+        <div id="weapons"></div>
+
+        <div id="joy"><div id="joyknob"></div></div>
+
+        <button id="house" type="button">
+          <span class="house-label">房子</span>
+          <span class="house-cd" id="house-cd">READY</span>
+        </button>
+
+        <div id="cards" class="hidden"></div>
+
+        <div id="title" class="overlay">
+          <h1>台风生存战</h1>
+          <p>台风「山竹·改」登陆。走位躲开龙卷风和积水。</p>
+          <p>伞和靴子会自动朝最近的怪扔出去，房子得你自己按。</p>
+          <p class="dim">WASD / 左下摇杆移动 · 空格 / 右下按钮砸房子 · 每 60 秒选一张卡</p>
+          <button id="start" type="button">开始</button>
+        </div>
+
+        <div id="over" class="overlay hidden"></div>
+        <div id="flash"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
