@@ -8,13 +8,15 @@ import {
   TilingSprite,
 } from 'pixi.js';
 import * as C from './config';
-import type { GameAssets, FrameSet } from './assets';
+import type { GameAssets } from './assets';
 import type { Bullet, Effect, Enemy, EnemyShot, FloatText, HudState, Orb, RunResult, ShopView } from './types';
 import { buildTextures, type Textures } from './textures';
 import { ScoreTracker } from './systems/score';
 import { ShopModel } from './systems/shop';
 import { Camera } from './systems/camera';
 import { buildPools as createPools, PLAYER_SCALE } from './entities/pools';
+import { updateEnemies, updateShots, updateTexts } from './world/updates';
+import { frameSetFor, pickTier, ringPosition } from './world/spawn';
 
 export interface UiHooks {
   onShop(view: ShopView, buy: (id: string) => ShopView, close: () => void): void;
@@ -300,34 +302,9 @@ export class Game {
   }
 
   private updateEnemies(dt: number): void {
-    const p = this.player;
-    for (const e of this.enemies) {
-      if (!e.alive) continue;
-      e.flash = Math.max(0, e.flash - dt);
-
-      if (e.kind === 'wind') {
-        const dx = p.x - e.x;
-        const dy = p.y - e.y;
-        const ang = Math.atan2(dy, dx) + Math.sin(this.t * 2.2 + e.wobble) * 0.2;
-        e.x += Math.cos(ang) * e.def.speed * dt;
-        e.y += Math.sin(ang) * e.def.speed * dt;
-
-        if (e.def.shootCd) {
-          e.shootT -= dt;
-          if (e.shootT <= 0) {
-            e.shootT = e.def.shootCd;
-            const a = Math.atan2(p.y - e.y, p.x - e.x);
-            this.spawnEnemyShot(e.x, e.y, a, e.def.shootSpeed ?? 240, e.def.shootDmg ?? 5);
-          }
-        }
-      } else {
-        const dx = p.x - e.x;
-        const dy = p.y - e.y;
-        const ang = Math.atan2(dy, dx) + Math.sin(this.t * 1.4 + e.wobble) * 0.14;
-        e.x += Math.cos(ang) * e.def.speed * dt;
-        e.y += Math.sin(ang) * e.def.speed * dt;
-      }
-    }
+    updateEnemies(dt, this.t, this.player, this.enemies, (x, y, ang, speed, dmg) =>
+      this.spawnEnemyShot(x, y, ang, speed, dmg),
+    );
   }
 
   private buildGrid(): void {
@@ -522,29 +499,7 @@ export class Game {
   }
 
   private updateShots(dt: number): void {
-    for (const s of this.shots) {
-      if (!s.alive) continue;
-      s.x += s.vx * dt;
-      s.y += s.vy * dt;
-      s.life -= dt;
-      s.spr.x = s.x;
-      s.spr.y = s.y;
-
-      if (s.life <= 0 || s.x < -50 || s.x > C.WORLD_W + 50 || s.y < -50 || s.y > C.WORLD_H + 50) {
-        s.alive = false;
-        s.spr.visible = false;
-        continue;
-      }
-
-      const dx = s.x - this.player.x;
-      const dy = s.y - this.player.y;
-      if (dx * dx + dy * dy < 22 * 22 && this.player.invuln <= 0) {
-        const dmg = (s as EnemyShot & { dmg: number }).dmg ?? 5;
-        s.alive = false;
-        s.spr.visible = false;
-        this.hurtPlayer(dmg);
-      }
-    }
+    updateShots(dt, this.shots, this.player, (dmg) => this.hurtPlayer(dmg));
   }
 
   private killBullet(b: Bullet): void {
@@ -728,17 +683,7 @@ export class Game {
   }
 
   private updateTexts(dt: number): void {
-    for (const f of this.texts) {
-      if (!f.alive) continue;
-      f.age += dt;
-      const p = Math.min(1, f.age / f.dur);
-      f.spr.y = f.y - 46 * (1 - Math.pow(1 - p, 2));
-      f.spr.alpha = p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
-      if (f.age >= f.dur) {
-        f.alive = false;
-        f.spr.visible = false;
-      }
-    }
+    updateTexts(this.texts, dt);
   }
 
   private updateEffects(dt: number): void {
@@ -776,33 +721,6 @@ export class Game {
     this.spawnEnemy();
   }
 
-  private pickTier(): C.TierDef {
-    const pool = C.TIERS.filter((d) => d.unlock <= this.t);
-    let total = 0;
-    for (const d of pool) total += d.weight;
-    let r = Math.random() * total;
-    for (const d of pool) {
-      r -= d.weight;
-      if (r <= 0) return d;
-    }
-    return pool[pool.length - 1];
-  }
-
-  private frameSetFor(def: C.TierDef): FrameSet {
-    switch (def.key) {
-      case 'wind1':
-        return this.assets.wind1;
-      case 'wind2':
-        return this.assets.wind2;
-      case 'wind3':
-        return this.assets.wind3;
-      case 'rain1':
-        return this.assets.rain1;
-      default:
-        return this.assets.rain2;
-    }
-  }
-
   private spawnEnemy(): void {
     let e: Enemy | null = null;
     for (const cand of this.enemies) {
@@ -813,12 +731,9 @@ export class Game {
     }
     if (!e) return;
 
-    const def = this.pickTier();
+    const def = pickTier(this.t);
     const half = this.viewHalf();
-    const radius = Math.max(half.w, half.h) + 80 + C.rand(0, 160);
-    const ang = C.rand(0, Math.PI * 2);
-    const x = C.clamp(this.player.x + Math.cos(ang) * radius, 20, C.WORLD_W - 20);
-    const y = C.clamp(this.player.y + Math.sin(ang) * radius, 20, C.WORLD_H - 20);
+    const { x, y } = ringPosition(this.player.x, this.player.y, half.w, half.h);
 
     const wi = this.stats.addSpawn(this.t);
 
@@ -838,7 +753,7 @@ export class Game {
     e.flash = 0;
     e.growT = 0;
 
-    const fs = this.frameSetFor(def);
+    const fs = frameSetFor(this.assets, def);
     e.spr.textures = fs.frames;
     e.spr.animationSpeed = def.tier === 3 ? 0.32 : 0.22;
     const scl = def.visual / fs.w * (def.tier >= 2 ? Math.sqrt(hpMul) : 1);
