@@ -598,7 +598,7 @@ export class Game {
     b.dmgWind = dmgWind;
     b.dmgWater = dmgWater;
     b.pierce = pierce;
-    b.spin = kind === 'umbrella' ? 13 : 0;
+    b.spin = kind === 'umbrella' ? 13 : (Math.random() < 0.5 ? -1 : 1) * 9;
     b.r = kind === 'umbrella' ? C.UMBRELLA.r : C.BOOT.r;
     b.hits.clear();
     b.spr.texture = kind === 'umbrella' ? this.assets.umbrella : this.assets.boot;

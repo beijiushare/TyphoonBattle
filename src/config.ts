@@ -63,14 +63,14 @@ export const UMBRELLA = {
 
 export const BOOT = {
   orbit: 40,
-  cd: 0.22,
-  speed: 620,
+  cd: 0.24,
+  speed: 520,
   range: 320,
   rangeMax: 420,
   dmgWind: 5,
   dmgWater: 12,
   r: 13,
-  spread: (3 * Math.PI) / 180,
+  spread: (4 * Math.PI) / 180,
 };
 
 export const HOUSE = {
