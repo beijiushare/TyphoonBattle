@@ -63,7 +63,7 @@ export const UMBRELLA = {
 
 export const BOOT = {
   orbit: 40,
-  cd: 0.24,
+  cd: 0.28,
   speed: 520,
   range: 320,
   rangeMax: 420,
