@@ -59,6 +59,7 @@ export class Game {
   private paperSprite!: TilingSprite;
 
   private t = 0;
+  private moving = false;
   private player = {
     x: C.WORLD_W / 2,
     y: C.WORLD_H / 2,
@@ -459,6 +460,7 @@ export class Game {
     let ix = this.input().x;
     let iy = this.input().y;
     const len = Math.hypot(ix, iy);
+    this.moving = len > 0.06;
     if (len > 1) {
       ix /= len;
       iy /= len;
@@ -771,7 +773,7 @@ export class Game {
     if (b) b.k += 1;
     else this.buckets.set(e.winIdx, { a: 0, k: 1 });
 
-    this.dropOrbs(e.x, e.y, e.def.drop, e.def.tier < 3);
+    this.dropOrbs(e.x, e.y, e.def.drop, e.def.tier < 3 && this.moving);
     this.spawnFloat(e.x, e.y - 12, `+${e.def.drop}`, e.def.tier >= 3 ? 0x1f6f8b : 0x8a5a12);
   }
 
