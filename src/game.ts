@@ -18,6 +18,8 @@ import { buildPools as createPools, PLAYER_SCALE } from './entities/pools';
 import { updateEnemies, updateShots, updateTexts } from './world/updates';
 import { createWeapons, updateWeapons } from './world/weapons';
 import { freeEnemy, spawnInto } from './world/enemy';
+import { spawnEffect, spawnFloat, updateEffects } from './world/effects';
+import { houseBlast } from './world/house';
 import { updateBullets, updateOrbs } from './world/combat';
 
 export interface UiHooks {
@@ -471,27 +473,13 @@ export class Game {
   useHouse(): void {
     if (this.state !== 'running' || this.houseCd > 0) return;
     this.houseCd = C.HOUSE.cd;
-
-    const radius = C.HOUSE.radius + (this.houseLv - 1) * C.HOUSE.radiusPerLv;
-    const dmgWind = C.HOUSE.dmgWind + (this.houseLv - 1) * C.HOUSE.dmgPerLv;
-    const dmgWater = C.HOUSE.dmgWater + (this.houseLv - 1) * C.HOUSE.dmgPerLv * 0.5;
-
-    for (const e of this.enemies) {
-      if (!e.alive) continue;
-      const dx = e.x - this.player.x;
-      const dy = e.y - this.player.y;
-      const d = Math.hypot(dx, dy);
-      if (d > radius + e.r) continue;
-      const dmg = e.kind === 'wind' ? dmgWind : dmgWater;
-      if (d > 0.5) {
-        e.x += (dx / d) * 70;
-        e.y += (dy / d) * 70;
-      }
-      this.damageEnemy(e, dmg);
-    }
-
-    this.spawnEffect('ring', this.player.x, this.player.y, 0.15, radius / 100, 0.55);
-    this.spawnEffect('house', this.player.x, this.player.y, 2.4, 1, 0.8);
+    houseBlast(
+      this.player,
+      this.houseLv,
+      this.enemies,
+      (e, dmg) => this.damageEnemy(e, dmg),
+      (kind, x, y, from, to, dur) => this.spawnEffect(kind, x, y, from, to, dur),
+    );
   }
 
   private spawnEffect(
@@ -502,69 +490,19 @@ export class Game {
     to: number,
     dur: number,
   ): void {
-    for (const f of this.effects) {
-      if (f.alive || f.kind !== kind) continue;
-      f.alive = true;
-      f.x = x;
-      f.y = y;
-      f.age = 0;
-      f.dur = dur;
-      f.from = from;
-      f.to = to;
-      f.spr.visible = true;
-      f.spr.alpha = 1;
-      f.spr.x = x;
-      f.spr.y = y;
-      f.spr.scale.set(from);
-      f.spr.tint = 0xb5721c;
-      return;
-    }
+    spawnEffect(this.effects, kind, x, y, from, to, dur);
   }
 
   private spawnFloat(x: number, y: number, text: string, color: number): void {
-    for (const f of this.texts) {
-      if (f.alive) continue;
-      f.alive = true;
-      f.x = x;
-      f.y = y;
-      f.age = 0;
-      f.dur = 0.9;
-      f.spr.text = text;
-      f.spr.style.fill = color;
-      f.spr.visible = true;
-      f.spr.alpha = 1;
-      f.spr.x = x;
-      f.spr.y = y;
-      return;
-    }
+    spawnFloat(this.texts, x, y, text, color);
   }
-
   private updateTexts(dt: number): void {
     updateTexts(this.texts, dt);
   }
 
   private updateEffects(dt: number): void {
-    for (const f of this.effects) {
-      if (!f.alive) continue;
-      f.age += dt;
-      const p = Math.min(1, f.age / f.dur);
-      if (f.kind === 'ring') {
-        const ease = 1 - Math.pow(1 - p, 2.2);
-        f.spr.scale.set(C.lerp(f.from, f.to, ease));
-        f.spr.alpha = 1 - p;
-      } else {
-        const fall = Math.min(1, f.age / 0.24);
-        f.spr.scale.set(C.lerp(f.from, f.to, fall * fall));
-        f.spr.y = f.y - (1 - fall) * 220;
-        f.spr.alpha = p > 0.7 ? 1 - (p - 0.7) / 0.3 : 1;
-      }
-      if (f.age >= f.dur) {
-        f.alive = false;
-        f.spr.visible = false;
-      }
-    }
+    updateEffects(this.effects, dt);
   }
-
   private updateScore(): void {
     this.stats.update(this.t);
   }
