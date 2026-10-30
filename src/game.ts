@@ -12,11 +12,9 @@ import * as C from './config';
 import type { GameAssets, FrameSet } from './assets';
 import type { Bullet, Effect, Enemy, EnemyShot, FloatText, HudState, Orb, RunResult, ShopView } from './types';
 import { buildTextures, type Textures } from './textures';
-
-interface Bucket {
-  a: number;
-  k: number;
-}
+import { ScoreTracker } from './systems/score';
+import { ShopModel } from './systems/shop';
+import { Camera } from './systems/camera';
 
 export interface UiHooks {
   onShop(view: ShopView, buy: (id: string) => ShopView, close: () => void): void;
@@ -55,7 +53,6 @@ export class Game {
   private shotTex!: Texture;
 
   state: 'idle' | 'running' | 'paused' | 'over' = 'idle';
-  private camScale = 1;
   private paperSprite!: TilingSprite;
 
   private t = 0;
@@ -86,15 +83,9 @@ export class Game {
   private houseLv = 1;
 
   private energy = 0;
-  private shopStock = new Map<string, number>();
-
-  private score = 0;
-  private buckets = new Map<number, Bucket>();
-  private carry = { ms: 0, a: 0, k: 0 };
-  private closedUpTo = 0;
-  private totalSpawned = 0;
-  private totalKilled = 0;
-  private lastRate: number | null = null;
+  private shop = new ShopModel();
+  private stats = new ScoreTracker();
+  private cam = new Camera();
 
   private spawnAcc = 0;
   private aliveCount = 0;
@@ -121,32 +112,17 @@ export class Game {
   }
 
   layout(): void {
-    this.camScale = this.app.screen.height / C.VIEW_H;
-    this.world.scale.set(this.camScale);
-    const half = this.viewHalf();
-    this.paperSprite.width = half.w * 2 + 8;
-    this.paperSprite.height = half.h * 2 + 8;
+    this.cam.setViewport(this.app.screen.width, this.app.screen.height);
+    this.cam.resizePaper(this.paperSprite);
     this.camera();
   }
 
   private camera(): void {
-    this.world.position.set(
-      this.app.screen.width / 2 - this.player.x * this.camScale,
-      this.app.screen.height / 2 - this.player.y * this.camScale,
-    );
-    const half = this.viewHalf();
-    const left = this.player.x - half.w - 4;
-    const top = this.player.y - half.h - 4;
-    this.paperSprite.x = left;
-    this.paperSprite.y = top;
-    this.paperSprite.tilePosition.set(left, top);
+    this.cam.apply(this.world, this.paperSprite, this.player.x, this.player.y);
   }
 
   private viewHalf(): { w: number; h: number } {
-    return {
-      w: this.app.screen.width / (2 * this.camScale),
-      h: this.app.screen.height / (2 * this.camScale),
-    };
+    return this.cam.half();
   }
 
   private drawBackdrop(): void {
@@ -374,15 +350,8 @@ export class Game {
     this.houseLv = 1;
 
     this.energy = 0;
-    this.shopStock.clear();
-
-    this.score = 0;
-    this.buckets.clear();
-    this.carry = { ms: 0, a: 0, k: 0 };
-    this.closedUpTo = 0;
-    this.totalSpawned = 0;
-    this.totalKilled = 0;
-    this.lastRate = null;
+    this.shop.reset();
+    this.stats.reset();
 
     this.spawnAcc = 0;
     this.aliveCount = 0;
@@ -767,11 +736,7 @@ export class Game {
     e.barBg.visible = false;
     e.barFill.visible = false;
     this.aliveCount--;
-    this.totalKilled++;
-
-    const b = this.buckets.get(e.winIdx);
-    if (b) b.k += 1;
-    else this.buckets.set(e.winIdx, { a: 0, k: 1 });
+    this.stats.addKill(e.winIdx);
 
     this.dropOrbs(e.x, e.y, e.def.drop, e.def.tier < 3 && this.moving);
     this.spawnFloat(e.x, e.y - 12, `+${e.def.drop}`, e.def.tier >= 3 ? 0x1f6f8b : 0x8a5a12);
@@ -971,26 +936,7 @@ export class Game {
   }
 
   private updateScore(): void {
-    const idx = Math.floor(this.t / C.SCORE.window);
-    while (this.closedUpTo < idx) {
-      this.closeWindow(this.closedUpTo, C.SCORE.window * 1000);
-      this.closedUpTo++;
-    }
-  }
-
-  private closeWindow(i: number, ms: number): void {
-    const b = this.buckets.get(i) ?? { a: 0, k: 0 };
-    this.buckets.delete(i);
-    const totalMs = ms + this.carry.ms;
-    const a = b.a + this.carry.a;
-    const k = b.k + this.carry.k;
-    if (a >= C.SCORE.minSpawn) {
-      this.score += Math.floor((totalMs * k) / a);
-      this.lastRate = k / a;
-      this.carry = { ms: 0, a: 0, k: 0 };
-    } else {
-      this.carry = { ms: totalMs, a, k };
-    }
+    this.stats.update(this.t);
   }
 
   private updateSpawn(dt: number): void {
@@ -1046,12 +992,7 @@ export class Game {
     const x = C.clamp(this.player.x + Math.cos(ang) * radius, 20, C.WORLD_W - 20);
     const y = C.clamp(this.player.y + Math.sin(ang) * radius, 20, C.WORLD_H - 20);
 
-    let wi = Math.floor(this.t / C.SCORE.window);
-    if (this.t - wi * C.SCORE.window > C.SCORE.window - C.SCORE.edgeCarry) wi += 1;
-    const b = this.buckets.get(wi);
-    if (b) b.a += 1;
-    else this.buckets.set(wi, { a: 1, k: 0 });
-    this.totalSpawned++;
+    const wi = this.stats.addSpawn(this.t);
 
     const hpMul = def.tier >= 2 ? 1 + this.t / 150 : 1;
     e.alive = true;
@@ -1141,28 +1082,15 @@ export class Game {
   }
 
   shopView(): ShopView {
-    return {
-      energy: this.energy,
-      items: C.SHOP.map((d) => ({
-        id: d.id,
-        name: d.name,
-        desc: d.desc,
-        tip: d.tip,
-        price: d.price,
-        soldOut: d.limit !== undefined && (this.shopStock.get(d.id) ?? 0) >= d.limit,
-      })),
-    };
+    return this.shop.view(this.energy);
   }
 
   private purchase(id: string): ShopView {
     const def = C.SHOP.find((d) => d.id === id);
     if (!def) return this.shopView();
-    const bought = this.shopStock.get(def.id) ?? 0;
-    if (def.limit !== undefined && bought >= def.limit) return this.shopView();
-    if (this.energy < def.price) return this.shopView();
-
-    this.energy -= def.price;
-    this.shopStock.set(def.id, bought + 1);
+    if (!this.shop.canBuy(def.id, this.energy)) return this.shopView();
+    this.energy -= this.shop.priceOf(def.id);
+    this.shop.record(def.id);
     this.applyShop(def.id);
     return this.shopView();
   }
@@ -1206,41 +1134,25 @@ export class Game {
 
   private die(): void {
     this.state = 'over';
-
-    const idx = Math.floor(this.t / C.SCORE.window);
-    const partialMs = (this.t - idx * C.SCORE.window) * 1000;
-    let a = this.carry.a;
-    let k = this.carry.k;
-    const ms = this.carry.ms + partialMs;
-    for (const [key, b] of this.buckets) {
-      if (key >= idx) {
-        a += b.a;
-        k += b.k;
-      }
-    }
-    if (a > 0) this.score += Math.floor((ms * k) / a);
-
-    const rate = this.totalSpawned > 0 ? this.totalKilled / this.totalSpawned : 0;
+    const res = this.stats.finalize(this.t);
     this.ui.onOver({
       time: this.t,
-      kills: this.totalKilled,
-      spawned: this.totalSpawned,
-      rate,
-      score: this.score,
+      kills: this.stats.totalKilled,
+      spawned: this.stats.totalSpawned,
+      rate: res.rate,
+      score: res.score,
     });
   }
 
   getHud(): HudState {
-    const idx = Math.floor(this.t / C.SCORE.window);
-    const b = this.buckets.get(idx);
     return {
       hp: this.player.hp,
       maxHp: this.player.maxHp,
       energy: this.energy,
       time: this.t,
       nextShop: Math.max(0, this.nextShopAt - this.t),
-      windowRate: b && b.a > 0 ? b.k / b.a : null,
-      lastRate: this.lastRate,
+      windowRate: this.stats.liveWindow(this.t),
+      lastRate: this.stats.lastRate,
       umbrella: this.umbrellaSlots,
       boots: this.bootSlots,
       houseCd: this.houseCd,
