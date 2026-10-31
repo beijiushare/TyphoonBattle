@@ -60,6 +60,8 @@ export const SCORE = {
 };
 
 export const ORB = {
+  /** 单个能量点的面值：所有掉落与商品价格都乘这个数 */
+  value: 99,
   healChance: 1 / 15,
   healAmount: 10,
   life: 18,

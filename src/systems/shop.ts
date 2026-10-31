@@ -17,7 +17,7 @@ export class ShopModel {
         name: d.name,
         desc: d.desc,
         tip: d.tip,
-        price: d.price,
+        price: d.price * C.ORB.value,
         soldOut: d.limit !== undefined && (this.stock.get(d.id) ?? 0) >= d.limit,
       })),
     };
@@ -28,11 +28,11 @@ export class ShopModel {
     if (!def) return false;
     const bought = this.stock.get(def.id) ?? 0;
     if (def.limit !== undefined && bought >= def.limit) return false;
-    return energy >= def.price;
+    return energy >= def.price * C.ORB.value;
   }
 
   priceOf(id: ShopId): number {
-    return C.SHOP.find((d) => d.id === id)?.price ?? 0;
+    return (C.SHOP.find((d) => d.id === id)?.price ?? 0) * C.ORB.value;
   }
 
   record(id: ShopId): void {

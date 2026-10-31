@@ -442,7 +442,7 @@ export class Game {
   private updateOrbs(dt: number): void {
     updateOrbs(dt, this.orbs, this.player, (kind) => {
       if (kind === 'heal') this.player.hp = Math.min(this.player.maxHp, this.player.hp + C.ORB.healAmount);
-      else this.energy += 1;
+      else this.energy += C.ORB.value;
     });
   }
   private hurtPlayer(dmg: number): void {
