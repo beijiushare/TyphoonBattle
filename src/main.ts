@@ -4,17 +4,18 @@ import { makePaperTexture } from './paper';
 import { Game } from './game';
 import { UI } from './ui';
 
+const host = document.getElementById('game');
+if (!host) throw new Error('missing #game');
+
 const app = new Application();
 await app.init({
   background: '#c9a878',
-  resizeTo: window,
+  resizeTo: host,
   antialias: true,
   resolution: Math.min(window.devicePixelRatio || 1, 2),
   autoDensity: true,
 });
 
-const host = document.getElementById('game');
-if (!host) throw new Error('missing #game');
 host.appendChild(app.canvas);
 
 const ui = new UI();
@@ -32,6 +33,8 @@ const game = new Game(app, paper, assets, () => ui.getInput(), {
 
 game.layout();
 window.addEventListener('resize', () => game.layout());
+window.visualViewport?.addEventListener('resize', () => game.layout());
+new ResizeObserver(() => game.layout()).observe(app.canvas);
 
 ui.onStart = () => {
   ui.setPlaying(true);

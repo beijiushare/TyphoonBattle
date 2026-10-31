@@ -3,6 +3,8 @@ import { VIEW_H } from '../config';
 
 /** 小屏不再无限缩小：低于这个缩放就强制放大，避免手机上角色小成点 */
 const MIN_SCALE = 0.72;
+/** 纸纹向四周多铺一圈，全屏/地址栏收起时不会露出没有纹理的空白 */
+const PAD = 160;
 
 /** 摄像机：主角恒定在屏幕正中，纸纹按视口大小平铺并跟随。 */
 export class Camera {
@@ -22,8 +24,8 @@ export class Camera {
 
   resizePaper(paper: TilingSprite): void {
     const half = this.half();
-    paper.width = half.w * 2 + 8;
-    paper.height = half.h * 2 + 8;
+    paper.width = half.w * 2 + PAD * 2;
+    paper.height = half.h * 2 + PAD * 2;
   }
 
   apply(world: Container, paper: TilingSprite, px: number, py: number): void {
@@ -31,8 +33,8 @@ export class Camera {
     world.position.set(this.sw / 2 - px * this.scale, this.sh / 2 - py * this.scale);
 
     const half = this.half();
-    const left = px - half.w - 4;
-    const top = py - half.h - 4;
+    const left = px - half.w - PAD;
+    const top = py - half.h - PAD;
     paper.x = left;
     paper.y = top;
     paper.tilePosition.set(left, top);

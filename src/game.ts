@@ -107,7 +107,9 @@ export class Game {
   }
 
   layout(): void {
-    this.cam.setViewport(this.app.screen.width, this.app.screen.height);
+    const cw = this.app.canvas.clientWidth || this.app.screen.width;
+    const ch = this.app.canvas.clientHeight || this.app.screen.height;
+    this.cam.setViewport(cw, ch);
     this.cam.resizePaper(this.paperSprite);
     this.camera();
   }
