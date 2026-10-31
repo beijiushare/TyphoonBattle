@@ -1301,6 +1301,7 @@ body:not(.playing) #music {
   .fui-codex { max-height: 42vh; }
 }
 /* ---- HUD：时间与能量并排卡片 ---- */
+.hud-left { flex-direction: row; align-items: center; gap: 10px; }
 .hud-right { padding: 0; }
 .hud-right::before { display: none; }
 .hud-cards { display: flex; align-items: stretch; gap: 8px; }
