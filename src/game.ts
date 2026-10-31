@@ -539,6 +539,7 @@ export class Game {
     );
   }
   private checkShop(): void {
+    if (this.state !== 'running') return;
     if (this.t < this.nextShopAt) return;
     this.nextShopAt += C.CARD_EVERY;
     if (this.nextShopAt <= this.t) this.nextShopAt = this.t + C.CARD_EVERY;

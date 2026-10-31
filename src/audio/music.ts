@@ -24,7 +24,7 @@ export class Music {
 
     const master = ctx.createGain();
     master.gain.setValueAtTime(0, ctx.currentTime);
-    master.gain.linearRampToValueAtTime(this.on ? 0.5 : 0, ctx.currentTime + 2.5);
+    master.gain.linearRampToValueAtTime(this.on ? 1 : 0, ctx.currentTime + 2.5);
     master.connect(ctx.destination);
     this.master = master;
 
@@ -41,7 +41,7 @@ export class Music {
       const t = this.ctx.currentTime;
       this.master.gain.cancelScheduledValues(t);
       this.master.gain.setValueAtTime(this.master.gain.value, t);
-      this.master.gain.linearRampToValueAtTime(this.on ? 0.5 : 0, t + 0.4);
+      this.master.gain.linearRampToValueAtTime(this.on ? 1 : 0, t + 0.4);
     }
     return this.on;
   }
