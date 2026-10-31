@@ -67,6 +67,9 @@ export const ORB = {
   life: 18,
   pickupR: 30,
   radius: 7,
+  streamAfter: 220,
+  streamGap: 0.12,
+  streamSpeed: 380,
 };
 
 export const CARD_EVERY = 45;

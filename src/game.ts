@@ -48,6 +48,7 @@ export class Game {
   private orbs: Orb[] = [];
   private effects: Effect[] = [];
   private texts: FloatText[] = [];
+  private streams: Array<{ x: number; y: number; left: number; nextAt: number }> = [];
 
   private playerSpr!: AnimatedSprite;
   private playerShadow!: Sprite;
@@ -202,6 +203,7 @@ export class Game {
       o.alive = false;
       o.spr.visible = false;
     }
+    this.streams.length = 0;
     for (const f of this.effects) {
       f.alive = false;
       f.spr.visible = false;
@@ -243,6 +245,7 @@ export class Game {
     this.updateBullets(dt);
     this.updateShots(dt);
     this.contactDamage();
+    this.updateStreams();
     this.updateOrbs(dt);
     this.updateEffects(dt);
     this.updateTexts(dt);
@@ -422,8 +425,12 @@ export class Game {
     this.aliveCount--;
     this.stats.addKill(e.winIdx);
 
-    this.dropOrbs(e.x, e.y, e.def.drop, e.def.tier < 3 && this.moving);
-    this.spawnFloat(e.x, e.y - 12, `+${e.def.drop}`, e.def.tier >= 3 ? 0x1f6f8b : 0x8a5a12);
+    if (e.def.key === 'wind3' && this.t >= C.ORB.streamAfter) {
+      this.streams.push({ x: e.x, y: e.y, left: e.def.drop, nextAt: this.t });
+    } else {
+      this.dropOrbs(e.x, e.y, e.def.drop, e.def.tier < 3 && this.moving);
+    }
+    this.spawnFloat(e.x, e.y - 12, `+${e.def.drop * C.ORB.value}`, e.def.tier >= 3 ? 0x1f6f8b : 0x8a5a12);
   }
 
   private dropOrbs(x: number, y: number, count: number, allowHeal: boolean): void {
@@ -436,6 +443,9 @@ export class Game {
       o.kind = allowHeal && Math.random() < C.ORB.healChance ? 'heal' : 'energy';
       o.x = C.clamp(x + Math.cos(ang) * dist, 20, C.WORLD_W - 20);
       o.y = C.clamp(y + Math.sin(ang) * dist, 20, C.WORLD_H - 20);
+      o.flying = false;
+      o.vx = 0;
+      o.vy = 0;
       o.life = C.ORB.life;
       o.bob = C.rand(0, Math.PI * 2);
       o.spr.texture = o.kind === 'heal' ? this.orbTexHeal : this.orbTexEnergy;
@@ -444,6 +454,38 @@ export class Game {
       o.spr.x = o.x;
       o.spr.y = o.y;
     }
+  }
+
+  private updateStreams(): void {
+    for (let i = this.streams.length - 1; i >= 0; i--) {
+      const s = this.streams[i];
+      while (s.left > 0 && this.t >= s.nextAt) {
+        const ang = Math.atan2(this.player.y - s.y, this.player.x - s.x) + C.rand(-0.12, 0.12);
+        this.spawnFlyingOrb(s.x, s.y, ang);
+        s.left -= 1;
+        s.nextAt += C.ORB.streamGap;
+      }
+      if (s.left <= 0) this.streams.splice(i, 1);
+    }
+  }
+
+  private spawnFlyingOrb(x: number, y: number, ang: number): void {
+    const o = this.orbs.find((cand) => !cand.alive);
+    if (!o) return;
+    o.alive = true;
+    o.kind = 'energy';
+    o.x = x;
+    o.y = y;
+    o.flying = true;
+    o.vx = Math.cos(ang) * C.ORB.streamSpeed;
+    o.vy = Math.sin(ang) * C.ORB.streamSpeed;
+    o.life = 3;
+    o.bob = 0;
+    o.spr.texture = this.orbTexEnergy;
+    o.spr.visible = true;
+    o.spr.alpha = 1;
+    o.spr.x = x;
+    o.spr.y = y;
   }
 
   private updateOrbs(dt: number): void {

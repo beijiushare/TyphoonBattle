@@ -71,6 +71,31 @@ export function updateOrbs(
   for (const o of orbs) {
     if (!o.alive) continue;
     o.life -= dt;
+
+    const reach = C.ORB.pickupR * pickupMul;
+
+    // 连发出去的能量点：直线飞向玩家，撞到就收
+    if (o.flying) {
+      o.x += o.vx * dt;
+      o.y += o.vy * dt;
+      const d = Math.hypot(player.x - o.x, player.y - o.y);
+      if (d < reach + 12) {
+        o.alive = false;
+        o.spr.visible = false;
+        onPickup(o.kind);
+        continue;
+      }
+      if (o.life <= 0) {
+        o.alive = false;
+        o.spr.visible = false;
+        continue;
+      }
+      o.spr.x = o.x;
+      o.spr.y = o.y;
+      o.spr.alpha = o.life < 0.6 ? Math.max(0.2, o.life / 0.6) : 1;
+      continue;
+    }
+
     o.bob += dt * 4;
     const dx = player.x - o.x;
     const dy = player.y - o.y;
@@ -83,7 +108,7 @@ export function updateOrbs(
       o.y += (dy / (d || 1)) * pull;
     }
 
-    if (d < C.ORB.pickupR * pickupMul) {
+    if (d < reach) {
       o.alive = false;
       o.spr.visible = false;
       onPickup(o.kind);

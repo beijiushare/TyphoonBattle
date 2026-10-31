@@ -177,7 +177,7 @@ export function buildPools(
     spr.anchor.set(0.5);
     spr.visible = false;
     layers.layer.addChild(spr);
-    orbs.push({ alive: false, kind: 'energy', x: 0, y: 0, life: 0, bob: 0, spr });
+    orbs.push({ alive: false, kind: 'energy', x: 0, y: 0, life: 0, bob: 0, flying: false, vx: 0, vy: 0, spr });
   }
 
   const effects: Effect[] = [];

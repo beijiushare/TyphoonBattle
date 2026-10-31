@@ -61,6 +61,9 @@ export interface Orb {
   y: number;
   life: number;
   bob: number;
+  flying: boolean;
+  vx: number;
+  vy: number;
   spr: Sprite;
 }
 
