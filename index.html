@@ -54,9 +54,8 @@
               </div>
               <nav class="fui-nav" id="titleNav">
                 <button type="button" class="fui-nav-item on" data-tab="home"><span>开始</span></button>
+                <button type="button" class="fui-nav-item" data-tab="codex"><span>图鉴</span></button>
                 <button type="button" class="fui-nav-item" data-tab="settings"><span>设置</span></button>
-                <button type="button" class="fui-nav-item" data-tab="about"><span>关于</span></button>
-                <div class="fui-nav-ind" id="navInd"></div>
               </nav>
             </aside>
 
@@ -64,8 +63,13 @@
               <section class="fui-page" data-page="home">
                 <h1>台风「山竹·改」登陆</h1>
                 <p>走位躲开龙卷风和积水。伞和靴子会自动朝最近的怪扔出去，房子得你自己按。</p>
-                <p class="dim">WASD / 左下摇杆移动 · 空格 / 右下按钮砸房子 · 每 45 秒应急采购</p>
+                <p class="dim">摇杆 / WASD 移动 · 空格 / 按钮砸房子 · 每 45 秒应急采购</p>
                 <button id="start" class="fui-btn" type="button">开始游戏</button>
+              </section>
+
+              <section class="fui-page" data-page="codex" hidden>
+                <h2>图鉴</h2>
+                <div class="fui-codex" id="codex"></div>
               </section>
 
               <section class="fui-page" data-page="settings" hidden>
@@ -90,22 +94,25 @@
                   </div>
                 </div>
                 <p class="fui-note">难度调整后续开放</p>
-                <h3>图鉴</h3>
-                <div class="fui-codex" id="codex"></div>
-              </section>
 
-              <section class="fui-page" data-page="about" hidden>
-                <h2>关于</h2>
-                <p>一个在台风天里走位、捡能量、买应急物资的小游戏。</p>
+                <h3 class="fui-sub">关于</h3>
                 <div class="fui-links">
-                  <a class="fui-btn link" href="https://beijiu.top/" target="_blank" rel="noreferrer">网站 · beijiu.top</a>
-                  <a class="fui-btn link" href="https://space.bilibili.com/3745019517210321" target="_blank" rel="noreferrer">B站 · 空间</a>
+                  <a href="https://beijiu.top/" target="_blank" rel="noreferrer">网站 · beijiu.top</a>
+                  <a href="https://space.bilibili.com/3745019517210321" target="_blank" rel="noreferrer">B站 · 空间</a>
                 </div>
                 <p class="fui-note">背景风声由 WebAudio 实时合成，不含音频素材。</p>
               </section>
             </main>
           </div>
         </div>
+        <div id="gate" class="hidden">
+          <div class="gate-box">
+            <b>请把手机横过来</b>
+            <p>横屏后才能开始游戏</p>
+            <button id="gateGo" type="button" disabled>进入游戏</button>
+          </div>
+        </div>
+
         <div id="over" class="overlay hidden"></div>
         <div id="flash"></div>
       </div>

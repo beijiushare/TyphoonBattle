@@ -1,5 +1,4 @@
 import type { HudState, RunResult, ShopView } from './types';
-import { el } from './ui/dom';
 import { InputController } from './ui/input';
 import { Hud } from './ui/hud';
 import { ShopPanel } from './ui/shop';
@@ -23,10 +22,6 @@ export class UI {
     const title = new TitleScreen();
     title.onStart = () => this.onStart();
 
-    const hint = document.createElement('div');
-    hint.className = 'rotate-hint show';
-    hint.textContent = '请横屏游玩';
-    el('ui').appendChild(hint);
   }
   getInput(): { x: number; y: number } {
     return this.input.getInput();

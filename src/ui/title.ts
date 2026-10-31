@@ -1,17 +1,19 @@
 import * as C from '../config';
 import { music } from '../audio/music';
-import { enterFullscreenIfMobile } from './fullscreen';
+import { enterFullscreen, isLandscape, isTouchDevice, lockLandscape } from './fullscreen';
 import { el } from './dom';
 
-/** 标题窗口：三页导航（开始 / 设置 / 关于）+ 音乐与图鉴 */
+/** 标题窗口：开始 / 图鉴 / 设置（关于并入设置） */
 export class TitleScreen {
   onStart: () => void = () => {};
 
   private nav = el<HTMLElement>('titleNav');
-  private ind = el<HTMLElement>('navInd');
   private items: HTMLButtonElement[] = [];
   private pages: HTMLElement[] = [];
   private gameMusicBtn = el<HTMLButtonElement>('music');
+  private gate = el<HTMLElement>('gate');
+  private gateGo = el<HTMLButtonElement>('gateGo');
+  private starting = false;
 
   constructor() {
     this.items = [...this.nav.querySelectorAll<HTMLButtonElement>('.fui-nav-item')];
@@ -20,10 +22,13 @@ export class TitleScreen {
     this.items.forEach((btn, i) => btn.addEventListener('click', () => this.select(i)));
 
     el<HTMLButtonElement>('start').addEventListener('click', () => {
-      enterFullscreenIfMobile();
-      music.start();
-      this.onStart();
+      void this.requestStart();
     });
+    this.gateGo.addEventListener('click', () => {
+      void this.gateStart();
+    });
+    window.addEventListener('resize', () => this.syncGate());
+    window.addEventListener('orientationchange', () => this.syncGate());
 
     music.restore();
     this.bindSettings();
@@ -37,7 +42,53 @@ export class TitleScreen {
     this.pages.forEach((page, i) => {
       page.hidden = i !== index;
     });
-    this.ind.style.transform = `translateY(${index * 46}px)`;
+  }
+
+  /** 点击开始：能直接横屏就横屏全屏进入，否则弹出横屏提示 */
+  private async requestStart(): Promise<void> {
+    if (this.starting) return;
+    music.start();
+
+    if (!isTouchDevice()) {
+      this.startNow();
+      return;
+    }
+
+    this.starting = true;
+    await enterFullscreen();
+    const locked = await lockLandscape();
+    this.starting = false;
+
+    if (locked || isLandscape()) {
+      this.startNow();
+      return;
+    }
+    this.showGate();
+  }
+
+  private async gateStart(): Promise<void> {
+    if (this.starting || !isLandscape()) return;
+    this.starting = true;
+    await enterFullscreen();
+    this.starting = false;
+    this.startNow();
+  }
+
+  private startNow(): void {
+    this.gate.classList.add('hidden');
+    this.onStart();
+  }
+
+  private showGate(): void {
+    this.gate.classList.remove('hidden');
+    this.syncGate();
+  }
+
+  private syncGate(): void {
+    if (this.gate.classList.contains('hidden')) return;
+    const ready = isLandscape();
+    this.gateGo.disabled = !ready;
+    this.gateGo.textContent = ready ? '进入游戏' : '请横屏后点击';
   }
 
   private bindSettings(): void {

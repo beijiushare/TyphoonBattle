@@ -1211,3 +1211,106 @@ body:not(.playing) #music {
   background: rgba(10, 7, 7, 0.55);
   clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
 }
+
+/* ---- 关于链接 / 子标题 ---- */
+.fui-sub {
+  margin: 22px 0 10px;
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  color: var(--fui);
+}
+.fui-links a {
+  color: var(--fui);
+  font-size: 13px;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(var(--fui-rgb), 0.45);
+  padding-bottom: 2px;
+}
+.fui-links a:hover { color: #fff; }
+
+/* ---- 横屏门 ---- */
+#gate {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14, 9, 7, 0.94);
+}
+.gate-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  color: #f3ece6;
+}
+.gate-box b {
+  font-size: clamp(20px, 4.4vmin, 30px);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+}
+.gate-box p { font-size: 13px; color: #b7aca4; }
+#gateGo {
+  height: 46px;
+  padding: 0 36px;
+  border: 0;
+  background: var(--fui);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  clip-path: var(--cut);
+}
+#gateGo:disabled {
+  background: #3a2f2a;
+  color: #8b8078;
+  cursor: not-allowed;
+}
+
+/* ---- 竖屏 / 窄屏：拆掉大框，变成简约单列 ---- */
+@media (max-width: 900px), (orientation: portrait) {
+  #title.overlay { background: rgba(201, 168, 120, 0.22); padding: 18px; }
+  .fui-win {
+    display: block;
+    width: min(520px, 92vw);
+    height: auto;
+    max-height: 92vh;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    overflow: visible;
+  }
+  .fui-side { width: auto; background: transparent; padding: 0; gap: 14px; }
+  .fui-brand {
+    border-bottom: 0;
+    align-items: center;
+    text-align: center;
+    padding: 0 0 4px;
+  }
+  .fui-brand b { color: #2b1d14; }
+  .fui-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+  #title .fui-nav-item { height: 44px; padding: 0; text-align: center; color: #4a382b; }
+  #title .fui-nav-item::before { clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 10px 100%); }
+  #title .fui-nav-item.on span { color: #fff; }
+  .fui-main { background: transparent; padding: 16px 2px 0; }
+  .fui-page h1 { color: #2b1d14; font-size: clamp(24px, 6vw, 34px); }
+  .fui-page h2 { color: #2b1d14; font-size: 20px; }
+  .fui-page p { color: #3a2c20; }
+  .fui-page p.dim { color: #7a6858; }
+  .fui-note { color: #7a6858; }
+  .fui-row { border-bottom-color: rgba(43, 29, 20, 0.15); color: #30241a; }
+  .fui-sub { color: #c8192b; }
+  .fui-codex { max-height: 42vh; }
+  .fui-codex .cx { color: #4a382b; border-left-color: #c8192b; }
+  .fui-codex .cx b { color: #2b1d14; }
+  .fui-links a { color: #c8192b; border-bottom-color: rgba(200, 25, 43, 0.4); }
+  #title .fui-btn { background: #c8192b; }
+  #title .fui-seg button { color: #6a5442; background: rgba(200, 25, 43, 0.12); }
+  #title .fui-seg button.on { background: #c8192b; color: #fff; }
+  .fui-toggle i { background: rgba(200, 25, 43, 0.3); }
+  .fui-toggle input:checked + i { background: rgba(200, 25, 43, 0.85); }
+  .fui-range { width: min(200px, 46vw); background: rgba(200, 25, 43, 0.35); }
+}
