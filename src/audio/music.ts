@@ -132,7 +132,7 @@ export class Music {
     lowBp.frequency.value = 380;
     lowBp.Q.value = 4.5;
     const lowGain = ctx.createGain();
-    lowGain.gain.value = 0.28;
+    lowGain.gain.value = 0.09;
     low.connect(lowBp);
     lowBp.connect(lowGain);
     lowGain.connect(out);
@@ -152,7 +152,7 @@ export class Music {
     highBp.frequency.value = 1300;
     highBp.Q.value = 12;
     const highGain = ctx.createGain();
-    highGain.gain.value = 0.15;
+    highGain.gain.value = 0.04;
     const highLfo = ctx.createOscillator();
     highLfo.frequency.value = 0.04;
     const highDepth = ctx.createGain();
@@ -171,7 +171,7 @@ export class Music {
     edgeBp.frequency.value = 2600;
     edgeBp.Q.value = 14;
     const edgeGain = ctx.createGain();
-    edgeGain.gain.value = 0.08;
+    edgeGain.gain.value = 0.018;
     const edgeLfo = ctx.createOscillator();
     edgeLfo.frequency.value = 0.05;
     const edgeDepth = ctx.createGain();
@@ -189,14 +189,14 @@ export class Music {
     bodyLp.frequency.value = 320;
     bodyLp.Q.value = 0.8;
     const bodyGain = ctx.createGain();
-    bodyGain.gain.value = 0.12;
+    bodyGain.gain.value = 0.035;
     body.connect(bodyLp);
     bodyLp.connect(bodyGain);
     bodyGain.connect(out);
   }
 
   private scheduleGust(): void {
-    const wait = 3500 + Math.random() * 4500;
+    const wait = 4200 + Math.random() * 4200;
     window.setTimeout(() => {
       this.gust();
       this.scheduleGust();
@@ -210,8 +210,8 @@ export class Music {
     if (!ctx || !out) return;
 
     const t = ctx.currentTime;
-    const dur = 2.5 + Math.random() * 2.5;
-    const peak = 0.14 + Math.random() * 0.1;
+    const dur = 2.6 + Math.random() * 2.6;
+    const peak = 0.45 + Math.random() * 0.25;
     const startFreq = 260 + Math.random() * 180;
     const topFreq = 1100 + Math.random() * 900;
 
@@ -221,7 +221,7 @@ export class Music {
 
     const bp = ctx.createBiquadFilter();
     bp.type = 'bandpass';
-    bp.Q.value = 5 + Math.random() * 4;
+    bp.Q.value = 2.5 + Math.random() * 2.5;
     bp.frequency.setValueAtTime(startFreq, t);
     bp.frequency.linearRampToValueAtTime(topFreq, t + dur * 0.35);
     bp.frequency.linearRampToValueAtTime(startFreq * 1.1, t + dur);
