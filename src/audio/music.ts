@@ -23,8 +23,17 @@ export class Music {
 
     const master = ctx.createGain();
     master.gain.setValueAtTime(0, ctx.currentTime);
-    master.gain.linearRampToValueAtTime(this.on ? 1 : 0, ctx.currentTime + 2);
-    master.connect(ctx.destination);
+    master.gain.linearRampToValueAtTime(this.on ? 2 : 0, ctx.currentTime + 2);
+
+    // 音量翻倍后用限幅器兜底，避免阵风叠雷声时爆音
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -6;
+    limiter.knee.value = 6;
+    limiter.ratio.value = 12;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.25;
+    master.connect(limiter);
+    limiter.connect(ctx.destination);
     this.master = master;
 
     this.windBed(ctx, master);
@@ -40,7 +49,7 @@ export class Music {
       const t = this.ctx.currentTime;
       this.master.gain.cancelScheduledValues(t);
       this.master.gain.setValueAtTime(this.master.gain.value, t);
-      this.master.gain.linearRampToValueAtTime(this.on ? 1 : 0, t + 0.4);
+      this.master.gain.linearRampToValueAtTime(this.on ? 2 : 0, t + 0.4);
     }
     return this.on;
   }
