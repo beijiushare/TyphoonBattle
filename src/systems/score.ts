@@ -65,19 +65,8 @@ export class ScoreTracker {
   }
 
   finalize(t: number): { score: number; rate: number } {
-    const idx = Math.floor(t / C.SCORE.window);
-    const partialMs = (t - idx * C.SCORE.window) * 1000;
-    let a = this.carry.a;
-    let k = this.carry.k;
-    const ms = this.carry.ms + partialMs;
-    for (const [key, b] of this.buckets) {
-      if (key >= idx) {
-        a += b.a;
-        k += b.k;
-      }
-    }
-    if (a > 0) this.score += Math.floor((ms * k) / a);
     const rate = this.totalSpawned > 0 ? this.totalKilled / this.totalSpawned : 0;
+    this.score = Math.floor(t * 1_000_000);
     return { score: this.score, rate };
   }
 
