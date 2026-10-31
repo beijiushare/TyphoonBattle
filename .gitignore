@@ -4,3 +4,4 @@ dist
 *.local
 .claude_temp/
 .claude_dist/
+策划.md
