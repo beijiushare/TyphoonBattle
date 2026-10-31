@@ -46,13 +46,66 @@
         <div id="cards" class="hidden"></div>
 
         <div id="title" class="overlay">
-          <h1>台风生存战</h1>
-          <p>台风「山竹·改」登陆。走位躲开龙卷风和积水。</p>
-          <p>伞和靴子会自动朝最近的怪扔出去，房子得你自己按。</p>
-          <p class="dim">WASD / 左下摇杆移动 · 空格 / 右下按钮砸房子 · 每 60 秒选一张卡</p>
-          <button id="start" type="button">开始</button>
-        </div>
+          <div class="fui-win">
+            <aside class="fui-side">
+              <div class="fui-brand">
+                <b>台风生存战</b>
+                <i>TYPHOON SURVIVAL</i>
+              </div>
+              <nav class="fui-nav" id="titleNav">
+                <button type="button" class="fui-nav-item on" data-tab="home"><span>开始</span></button>
+                <button type="button" class="fui-nav-item" data-tab="settings"><span>设置</span></button>
+                <button type="button" class="fui-nav-item" data-tab="about"><span>关于</span></button>
+                <div class="fui-nav-ind" id="navInd"></div>
+              </nav>
+            </aside>
 
+            <main class="fui-main">
+              <section class="fui-page" data-page="home">
+                <h1>台风「山竹·改」登陆</h1>
+                <p>走位躲开龙卷风和积水。伞和靴子会自动朝最近的怪扔出去，房子得你自己按。</p>
+                <p class="dim">WASD / 左下摇杆移动 · 空格 / 右下按钮砸房子 · 每 45 秒应急采购</p>
+                <button id="start" class="fui-btn" type="button">开始游戏</button>
+              </section>
+
+              <section class="fui-page" data-page="settings" hidden>
+                <h2>设置</h2>
+                <div class="fui-row">
+                  <span>音乐</span>
+                  <label class="fui-toggle"><input type="checkbox" id="setMusic" /><i></i></label>
+                </div>
+                <div class="fui-row">
+                  <span>音量</span>
+                  <div class="fui-slider-wrap">
+                    <input id="setVolume" class="fui-range" type="range" min="0" max="100" step="1" value="100" />
+                    <b id="volVal">100</b>
+                  </div>
+                </div>
+                <div class="fui-row">
+                  <span>难度</span>
+                  <div class="fui-seg">
+                    <button type="button" class="on" disabled>普通</button>
+                    <button type="button" disabled>困难</button>
+                    <button type="button" disabled>噩梦</button>
+                  </div>
+                </div>
+                <p class="fui-note">难度调整后续开放</p>
+                <h3>图鉴</h3>
+                <div class="fui-codex" id="codex"></div>
+              </section>
+
+              <section class="fui-page" data-page="about" hidden>
+                <h2>关于</h2>
+                <p>一个在台风天里走位、捡能量、买应急物资的小游戏。</p>
+                <div class="fui-links">
+                  <a class="fui-btn link" href="https://beijiu.top/" target="_blank" rel="noreferrer">网站 · beijiu.top</a>
+                  <a class="fui-btn link" href="https://space.bilibili.com/3745019517210321" target="_blank" rel="noreferrer">B站 · 空间</a>
+                </div>
+                <p class="fui-note">背景风声由 WebAudio 实时合成，不含音频素材。</p>
+              </section>
+            </main>
+          </div>
+        </div>
         <div id="over" class="overlay hidden"></div>
         <div id="flash"></div>
       </div>

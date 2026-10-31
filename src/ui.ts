@@ -4,8 +4,7 @@ import { InputController } from './ui/input';
 import { Hud } from './ui/hud';
 import { ShopPanel } from './ui/shop';
 import { Overlays } from './ui/overlay';
-import { enterFullscreenIfMobile } from './ui/fullscreen';
-import { music } from './audio/music';
+import { TitleScreen } from './ui/title';
 
 export class UI {
   onStart: () => void = () => {};
@@ -21,25 +20,14 @@ export class UI {
     this.input.onHouse = () => this.onHouse();
     this.overlays.onRestart = () => this.onRestart();
 
-    el<HTMLButtonElement>('start').addEventListener('click', () => {
-      enterFullscreenIfMobile();
-      music.start();
-      this.onStart();
-    });
-
-    const musicBtn = el<HTMLButtonElement>('music');
-    musicBtn.addEventListener('click', () => {
-      const on = music.toggle();
-      musicBtn.textContent = on ? '音乐 开' : '音乐 关';
-      musicBtn.classList.toggle('off', !on);
-    });
+    const title = new TitleScreen();
+    title.onStart = () => this.onStart();
 
     const hint = document.createElement('div');
     hint.className = 'rotate-hint show';
     hint.textContent = '请横屏游玩';
     el('ui').appendChild(hint);
   }
-
   getInput(): { x: number; y: number } {
     return this.input.getInput();
   }

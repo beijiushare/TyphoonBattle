@@ -7,6 +7,7 @@ export class Music {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private on = true;
+  private volume = 1;
 
   start(): void {
     if (this.ctx) {
@@ -23,7 +24,7 @@ export class Music {
 
     const master = ctx.createGain();
     master.gain.setValueAtTime(0, ctx.currentTime);
-    master.gain.linearRampToValueAtTime(this.on ? 2 : 0, ctx.currentTime + 2);
+    master.gain.linearRampToValueAtTime(this.target(), ctx.currentTime + 2);
 
     // 音量较大，用限幅器兜底，避免阵风叠加时爆音
     const limiter = ctx.createDynamicsCompressor();
@@ -48,9 +49,56 @@ export class Music {
       const t = this.ctx.currentTime;
       this.master.gain.cancelScheduledValues(t);
       this.master.gain.setValueAtTime(this.master.gain.value, t);
-      this.master.gain.linearRampToValueAtTime(this.on ? 2 : 0, t + 0.4);
+      this.master.gain.linearRampToValueAtTime(this.target(), t + 0.4);
     }
+    this.save();
     return this.on;
+  }
+
+  setVolume(v: number): void {
+    this.volume = Math.min(1, Math.max(0, v));
+    if (this.ctx && this.master) {
+      const t = this.ctx.currentTime;
+      this.master.gain.cancelScheduledValues(t);
+      this.master.gain.setValueAtTime(this.master.gain.value, t);
+      this.master.gain.linearRampToValueAtTime(this.target(), t + 0.2);
+    }
+    this.save();
+  }
+
+  getVolume(): number {
+    return this.volume;
+  }
+
+  isOn(): boolean {
+    return this.on;
+  }
+
+  private target(): number {
+    return this.on ? 2 * this.volume : 0;
+  }
+
+  private save(): void {
+    try {
+      localStorage.setItem('typhoon.vol', String(this.volume));
+      localStorage.setItem('typhoon.music', this.on ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  }
+
+  restore(): void {
+    try {
+      const raw = localStorage.getItem('typhoon.vol');
+      if (raw !== null) {
+        const v = Number(raw);
+        if (Number.isFinite(v) && v >= 0 && v <= 1) this.volume = v;
+      }
+      const m = localStorage.getItem('typhoon.music');
+      if (m !== null) this.on = m !== '0';
+    } catch {
+      /* ignore */
+    }
   }
 
   /** 首尾交叉淡化的噪声，循环无接缝 */
