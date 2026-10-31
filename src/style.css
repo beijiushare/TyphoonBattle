@@ -1341,3 +1341,37 @@ body:not(.playing) #music {
   #nextcard, #gold, #rate { font-size: 11px; }
   #rate { margin-top: 4px; }
 }
+
+/* ---- 计时卡片：底部中间，替代武器提示 ---- */
+#weapons { display: none; }
+#clockcard {
+  position: absolute;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  padding: 5px 18px;
+  isolation: isolate;
+}
+#clockcard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(10, 7, 7, 0.55);
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+}
+#clockcard #time {
+  font-size: clamp(16px, 2.4vmin, 22px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+body:not(.playing) #clockcard { opacity: 0; pointer-events: none; }
+#clockcard { transition: opacity 200ms ease; }
+
+@media (pointer: coarse) {
+  #clockcard {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    padding: 4px 14px;
+  }
+  #clockcard #time { font-size: 16px; }
+}
