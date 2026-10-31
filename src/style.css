@@ -1010,8 +1010,7 @@ body:not(.playing) #house {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 34vh;
-  overflow: auto;
+  
   padding-right: 8px;
 }
 .fui-codex .cx {
