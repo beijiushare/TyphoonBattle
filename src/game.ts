@@ -61,6 +61,10 @@ export class Game {
 
   private t = 0;
   private moving = false;
+  private speedMul = 1;
+  private armor = 1;
+  private pickupMul = 1;
+
   private player = {
     x: C.WORLD_W / 2,
     y: C.WORLD_H / 2,
@@ -166,6 +170,9 @@ export class Game {
     this.player.dy = 1;
 
     this.weapons = createWeapons();
+    this.speedMul = 1;
+    this.armor = 1;
+    this.pickupMul = 1;
     this.houseCd = 0;
     this.houseLv = 1;
 
@@ -271,7 +278,7 @@ export class Game {
       }
     }
 
-    const sp = C.PLAYER.speed * slow;
+    const sp = C.PLAYER.speed * slow * this.speedMul;
     this.player.x = C.clamp(this.player.x + ix * sp * dt, 26, C.WORLD_W - 26);
     this.player.y = C.clamp(this.player.y + iy * sp * dt, 60, C.WORLD_H - 26);
   }
@@ -440,14 +447,14 @@ export class Game {
   }
 
   private updateOrbs(dt: number): void {
-    updateOrbs(dt, this.orbs, this.player, (kind) => {
+    updateOrbs(dt, this.orbs, this.player, this.pickupMul, (kind) => {
       if (kind === 'heal') this.player.hp = Math.min(this.player.maxHp, this.player.hp + C.ORB.healAmount);
       else this.energy += C.ORB.value;
     });
   }
   private hurtPlayer(dmg: number): void {
     const p = this.player;
-    p.hp -= dmg;
+    p.hp -= dmg * this.armor;
     p.invuln = C.PLAYER.invuln;
     p.lastHit = this.t;
     this.ui.onHurt();
@@ -544,6 +551,7 @@ export class Game {
     this.nextShopAt += C.CARD_EVERY;
     if (this.nextShopAt <= this.t) this.nextShopAt = this.t + C.CARD_EVERY;
 
+    this.shop.newVisit();
     this.state = 'paused';
     this.ui.onShop(
       this.shopView(),
@@ -571,21 +579,27 @@ export class Game {
   private applyShop(id: C.ShopId): void {
     const p = this.player;
     switch (id) {
-      case 'choco':
-        p.hp = Math.min(p.maxHp, p.hp + 5);
+      case 'tree':
+        p.maxHp = Math.min(C.PLAYER.hpCap, p.maxHp + C.PLAYER.maxHp * 0.15);
+        p.hp = Math.min(p.maxHp, p.hp + C.PLAYER.maxHp * 0.15);
         break;
-      case 'tea':
-        p.hp = Math.min(p.maxHp, p.hp + 15);
+      case 'window':
+        p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.25);
         break;
       case 'kit':
-        p.hp = p.maxHp;
+        p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.5);
         break;
-      case 'blanket':
-        p.maxHp = Math.min(C.PLAYER.hpCap, p.maxHp + 20);
-        p.hp = Math.min(p.maxHp, p.hp + 20);
+      case 'puddle':
+        this.speedMul += 0.08;
+        break;
+      case 'billboard':
+        this.armor = Math.max(0.5, this.armor * 0.9);
+        break;
+      case 'radio':
+        this.pickupMul += 0.25;
         break;
       case 'torch':
-        this.weapons.rangeBonus += 30;
+        this.weapons.rangeBonus += C.UMBRELLA.range * 0.15;
         break;
       case 'rib':
         this.weapons.umbrellaBonus += 0.2;
@@ -593,7 +607,7 @@ export class Game {
       case 'sole':
         this.weapons.bootBonus += 0.2;
         break;
-      case 'arms':
+      case 'pair':
         this.weapons.umbrellaArms = Math.min(4, this.weapons.umbrellaArms + 1);
         break;
       case 'umbSlot':
@@ -604,7 +618,6 @@ export class Game {
         break;
     }
   }
-
   private die(): void {
     this.state = 'over';
     const res = this.stats.finalize(this.t);

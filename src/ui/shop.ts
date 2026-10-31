@@ -25,7 +25,7 @@ export class ShopPanel {
         btn.type = 'button';
         btn.className = 'shop-item' + (disabled ? ' disabled' : '');
         btn.innerHTML = `
-          <div class="si-top"><span class="si-name">${item.name}</span><span class="si-price">${item.soldOut ? '已售罄' : item.price}</span></div>
+          <div class="si-top"><span class="si-name">${item.name}</span><span class="si-price">${item.soldOut ? '已购' : item.price}</span></div>
           <div class="si-desc">${item.desc}</div>
           <div class="si-tip">${item.tip}</div>
         `;

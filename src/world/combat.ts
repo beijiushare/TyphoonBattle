@@ -65,6 +65,7 @@ export function updateOrbs(
   dt: number,
   orbs: Orb[],
   player: { x: number; y: number },
+  pickupMul: number,
   onPickup: (kind: 'energy' | 'heal') => void,
 ): void {
   for (const o of orbs) {
@@ -75,13 +76,14 @@ export function updateOrbs(
     const dy = player.y - o.y;
     const d = Math.hypot(dx, dy);
 
-    if (d < 170) {
-      const pull = (1 - d / 170) * 520 * dt;
+    const magnet = 170 * pickupMul;
+    if (d < magnet) {
+      const pull = (1 - d / magnet) * 520 * dt;
       o.x += (dx / (d || 1)) * pull;
       o.y += (dy / (d || 1)) * pull;
     }
 
-    if (d < C.ORB.pickupR) {
+    if (d < C.ORB.pickupR * pickupMul) {
       o.alive = false;
       o.spr.visible = false;
       onPickup(o.kind);
