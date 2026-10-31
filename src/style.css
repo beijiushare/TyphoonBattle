@@ -1271,7 +1271,8 @@ body:not(.playing) #music {
 
 /* ---- 竖屏 / 窄屏：拆掉大框，变成简约单列 ---- */
 @media (max-width: 900px), (orientation: portrait) {
-  #title.overlay { background: rgba(201, 168, 120, 0.22); padding: 18px; }
+  #title.overlay { background: var(--fui-panel); padding: 18px; }
+
   .fui-win {
     display: block;
     width: min(520px, 92vw);
@@ -1289,27 +1290,13 @@ body:not(.playing) #music {
     text-align: center;
     padding: 0 0 4px;
   }
-  .fui-brand b { color: #2b1d14; }
   .fui-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
-  #title .fui-nav-item { height: 44px; padding: 0; text-align: center; color: #4a382b; }
-  #title .fui-nav-item::before { clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 10px 100%); }
-  #title .fui-nav-item.on span { color: #fff; }
+  #title .fui-nav-item { height: 44px; padding: 0; text-align: center; }
+  #title .fui-nav-item::before {
+    clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 10px 100%);
+  }
   .fui-main { background: transparent; padding: 16px 2px 0; }
-  .fui-page h1 { color: #2b1d14; font-size: clamp(24px, 6vw, 34px); }
-  .fui-page h2 { color: #2b1d14; font-size: 20px; }
-  .fui-page p { color: #3a2c20; }
-  .fui-page p.dim { color: #7a6858; }
-  .fui-note { color: #7a6858; }
-  .fui-row { border-bottom-color: rgba(43, 29, 20, 0.15); color: #30241a; }
-  .fui-sub { color: #c8192b; }
+  #title .fui-page[data-page="home"] { text-align: center; }
+  #title .fui-page[data-page="home"] .fui-btn { display: block; margin: 22px auto 0; }
   .fui-codex { max-height: 42vh; }
-  .fui-codex .cx { color: #4a382b; border-left-color: #c8192b; }
-  .fui-codex .cx b { color: #2b1d14; }
-  .fui-links a { color: #c8192b; border-bottom-color: rgba(200, 25, 43, 0.4); }
-  #title .fui-btn { background: #c8192b; }
-  #title .fui-seg button { color: #6a5442; background: rgba(200, 25, 43, 0.12); }
-  #title .fui-seg button.on { background: #c8192b; color: #fff; }
-  .fui-toggle i { background: rgba(200, 25, 43, 0.3); }
-  .fui-toggle input:checked + i { background: rgba(200, 25, 43, 0.85); }
-  .fui-range { width: min(200px, 46vw); background: rgba(200, 25, 43, 0.35); }
 }
