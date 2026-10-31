@@ -1300,3 +1300,43 @@ body:not(.playing) #music {
   #title .fui-page[data-page="home"] .fui-btn { display: block; margin: 22px auto 0; }
   .fui-codex { max-height: 42vh; }
 }
+/* ---- HUD：时间与能量并排卡片 ---- */
+.hud-right { padding: 0; }
+.hud-right::before { display: none; }
+.hud-cards { display: flex; align-items: stretch; gap: 8px; }
+.hud-cards > div,
+#rate {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  padding: 5px 14px;
+}
+#gold,
+#rate { opacity: 1; }
+.hud-cards > div::before,
+#rate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(10, 7, 7, 0.55);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+#time { font-size: clamp(18px, 2.8vmin, 26px); }
+#rate { margin-top: 6px; font-size: 12px; }
+
+@media (pointer: coarse) {
+  #hud {
+    top: max(4px, env(safe-area-inset-top));
+    padding: 0 clamp(10px, 2.4vw, 20px);
+  }
+  #hud::before { top: -10px; height: 62px; }
+  .hud-left, .hud-center { padding: 4px 12px; }
+  .hud-cards > div, #rate { padding: 4px 11px; }
+  .hud-cards { gap: 6px; }
+  #hpwrap { height: 14px; width: clamp(140px, 30vw, 240px); }
+  #time { font-size: 17px; }
+  #nextcard, #gold, #rate { font-size: 11px; }
+  #rate { margin-top: 4px; }
+}
