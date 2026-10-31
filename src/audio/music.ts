@@ -1,7 +1,7 @@
 /**
- * 纯代码 BGM：台风大风 + 偶发雷声
- * 风：底层呼啸（带通噪声 + 慢速扫频）+ 低频风身；每隔几秒随机刮一阵阵风（带扫频与声像）
- * 雷：15~35s 随机一次
+ * 纯代码 BGM：纯风（无雨、无雷）
+ * 底层：两路带通噪声（低频呼呼 + 高空细啸）+ 低频风身，慢速扫频
+ * 阵风：每 3.5~8s 随机来一阵，扫频/音量/声像都随机
  */
 export class Music {
   private ctx: AudioContext | null = null;
@@ -25,7 +25,7 @@ export class Music {
     master.gain.setValueAtTime(0, ctx.currentTime);
     master.gain.linearRampToValueAtTime(this.on ? 2 : 0, ctx.currentTime + 2);
 
-    // 音量翻倍后用限幅器兜底，避免阵风叠雷声时爆音
+    // 音量较大，用限幅器兜底，避免阵风叠加时爆音
     const limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -6;
     limiter.knee.value = 6;
@@ -38,7 +38,6 @@ export class Music {
 
     this.windBed(ctx, master);
     this.scheduleGust();
-    this.scheduleThunder(8000);
 
     (window as unknown as { __music?: Music }).__music = this;
   }
@@ -77,28 +76,28 @@ export class Music {
     return src;
   }
 
-  /** 底层持续风：窄带呼啸 + 低频风身，带慢速扫频 */
   private windBed(ctx: AudioContext, out: AudioNode): void {
-    const whistle = this.loopNoise(ctx);
-    const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 380;
-    bp.Q.value = 4.5;
-    const whistleGain = ctx.createGain();
-    whistleGain.gain.value = 0.28;
-    whistle.connect(bp);
-    bp.connect(whistleGain);
-    whistleGain.connect(out);
+    // 低频呼呼
+    const low = this.loopNoise(ctx);
+    const lowBp = ctx.createBiquadFilter();
+    lowBp.type = 'bandpass';
+    lowBp.frequency.value = 380;
+    lowBp.Q.value = 4.5;
+    const lowGain = ctx.createGain();
+    lowGain.gain.value = 0.28;
+    low.connect(lowBp);
+    lowBp.connect(lowGain);
+    lowGain.connect(out);
 
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.06;
-    const depth = ctx.createGain();
-    depth.gain.value = 220;
-    lfo.connect(depth);
-    depth.connect(bp.frequency);
-    lfo.start();
+    const lowLfo = ctx.createOscillator();
+    lowLfo.frequency.value = 0.06;
+    const lowDepth = ctx.createGain();
+    lowDepth.gain.value = 220;
+    lowLfo.connect(lowDepth);
+    lowDepth.connect(lowBp.frequency);
+    lowLfo.start();
 
-    // 高空细啸：更高更窄的一层，出现"咻——"的感觉
+    // 高空细啸
     const high = this.loopNoise(ctx);
     const highBp = ctx.createBiquadFilter();
     highBp.type = 'bandpass';
@@ -116,15 +115,17 @@ export class Music {
     high.connect(highBp);
     highBp.connect(highGain);
     highGain.connect(out);
+
+    // 低频风身
     const body = this.loopNoise(ctx);
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 320;
-    lp.Q.value = 0.8;
+    const bodyLp = ctx.createBiquadFilter();
+    bodyLp.type = 'lowpass';
+    bodyLp.frequency.value = 320;
+    bodyLp.Q.value = 0.8;
     const bodyGain = ctx.createGain();
     bodyGain.gain.value = 0.18;
-    body.connect(lp);
-    lp.connect(bodyGain);
+    body.connect(bodyLp);
+    bodyLp.connect(bodyGain);
     bodyGain.connect(out);
   }
 
@@ -173,59 +174,8 @@ export class Music {
     bp.connect(gain);
     gain.connect(panner);
     panner.connect(out);
-
     src.start(t);
     src.stop(t + dur + 0.1);
-  }
-
-  private scheduleThunder(firstMs: number): void {
-    const wait = firstMs > 0 ? firstMs : 15000 + Math.random() * 20000;
-    window.setTimeout(() => {
-      this.thunder();
-      this.scheduleThunder(0);
-    }, wait);
-  }
-
-  private thunder(): void {
-    const ctx = this.ctx;
-    const out = this.master;
-    if (!ctx || !out) return;
-
-    const t = ctx.currentTime;
-
-    // 炸裂：中频短促
-    const crack = ctx.createBufferSource();
-    crack.buffer = this.makeNoise(ctx, 1);
-    const crackBp = ctx.createBiquadFilter();
-    crackBp.type = 'bandpass';
-    crackBp.frequency.value = 750;
-    crackBp.Q.value = 0.7;
-    const crackGain = ctx.createGain();
-    crackGain.gain.setValueAtTime(0, t);
-    crackGain.gain.linearRampToValueAtTime(0.7, t + 0.03);
-    crackGain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
-    crack.connect(crackBp);
-    crackBp.connect(crackGain);
-    crackGain.connect(out);
-    crack.start(t);
-    crack.stop(t + 1);
-
-    // 轰鸣：低频拖尾
-    const rumble = ctx.createBufferSource();
-    rumble.buffer = this.makeNoise(ctx, 6);
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 320;
-    lp.Q.value = 1.1;
-    const rumbleGain = ctx.createGain();
-    rumbleGain.gain.setValueAtTime(0, t);
-    rumbleGain.gain.linearRampToValueAtTime(0.6, t + 0.14);
-    rumbleGain.gain.exponentialRampToValueAtTime(0.001, t + 4.5);
-    rumble.connect(lp);
-    lp.connect(rumbleGain);
-    rumbleGain.connect(out);
-    rumble.start(t);
-    rumble.stop(t + 4.8);
   }
 }
 
