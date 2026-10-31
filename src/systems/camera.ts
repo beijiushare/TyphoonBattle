@@ -1,6 +1,9 @@
 import type { Container, TilingSprite } from 'pixi.js';
 import { VIEW_H } from '../config';
 
+/** 小屏不再无限缩小：低于这个缩放就强制放大，避免手机上角色小成点 */
+const MIN_SCALE = 0.72;
+
 /** 摄像机：主角恒定在屏幕正中，纸纹按视口大小平铺并跟随。 */
 export class Camera {
   scale = 1;
@@ -10,7 +13,7 @@ export class Camera {
   setViewport(w: number, h: number): void {
     this.sw = w;
     this.sh = h;
-    this.scale = h / VIEW_H;
+    this.scale = Math.max(h / VIEW_H, MIN_SCALE);
   }
 
   half(): { w: number; h: number } {
