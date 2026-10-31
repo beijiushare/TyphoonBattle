@@ -5,6 +5,7 @@ import { Hud } from './ui/hud';
 import { ShopPanel } from './ui/shop';
 import { Overlays } from './ui/overlay';
 import { enterFullscreenIfMobile } from './ui/fullscreen';
+import { music } from './audio/music';
 
 export class UI {
   onStart: () => void = () => {};
@@ -22,7 +23,15 @@ export class UI {
 
     el<HTMLButtonElement>('start').addEventListener('click', () => {
       enterFullscreenIfMobile();
+      music.start();
       this.onStart();
+    });
+
+    const musicBtn = el<HTMLButtonElement>('music');
+    musicBtn.addEventListener('click', () => {
+      const on = music.toggle();
+      musicBtn.textContent = on ? '音乐 开' : '音乐 关';
+      musicBtn.classList.toggle('off', !on);
     });
 
     const hint = document.createElement('div');

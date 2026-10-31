@@ -709,3 +709,28 @@ body:not(.playing) #house {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* ===== 摇杆放大到两倍 + 音乐开关 ===== */
+#joy {
+  width: clamp(192px, 36vmin, 320px);
+  height: clamp(192px, 36vmin, 320px);
+}
+
+#music {
+  position: absolute;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: calc(max(28px, env(safe-area-inset-bottom)) + clamp(88px, 16vmin, 140px) + 14px);
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: clamp(11px, 1.5vmin, 13px);
+  letter-spacing: 0.08em;
+  color: #33291a;
+  background: rgba(238, 222, 194, 0.75);
+  border: 1px solid rgba(90, 60, 28, 0.5);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+#music.off {
+  opacity: 0.45;
+}
