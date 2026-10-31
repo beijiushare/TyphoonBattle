@@ -4,6 +4,7 @@ import { InputController } from './ui/input';
 import { Hud } from './ui/hud';
 import { ShopPanel } from './ui/shop';
 import { Overlays } from './ui/overlay';
+import { enterFullscreenIfMobile } from './ui/fullscreen';
 
 export class UI {
   onStart: () => void = () => {};
@@ -19,7 +20,10 @@ export class UI {
     this.input.onHouse = () => this.onHouse();
     this.overlays.onRestart = () => this.onRestart();
 
-    el<HTMLButtonElement>('start').addEventListener('click', () => this.onStart());
+    el<HTMLButtonElement>('start').addEventListener('click', () => {
+      enterFullscreenIfMobile();
+      this.onStart();
+    });
 
     const hint = document.createElement('div');
     hint.className = 'rotate-hint show';
