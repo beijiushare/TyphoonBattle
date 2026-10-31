@@ -762,8 +762,8 @@ body:not(.playing) #house {
 }
 
 .fui-win {
-  width: min(1060px, 94vw);
-  height: min(640px, 88vh);
+  width: min(840px, 92vw);
+  height: min(600px, 88vh);
   display: flex;
   border-radius: 18px;
   overflow: hidden;
