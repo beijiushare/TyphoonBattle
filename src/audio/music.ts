@@ -101,10 +101,10 @@ export class Music {
     const high = this.loopNoise(ctx);
     const highBp = ctx.createBiquadFilter();
     highBp.type = 'bandpass';
-    highBp.frequency.value = 880;
-    highBp.Q.value = 9;
+    highBp.frequency.value = 1300;
+    highBp.Q.value = 12;
     const highGain = ctx.createGain();
-    highGain.gain.value = 0.07;
+    highGain.gain.value = 0.15;
     const highLfo = ctx.createOscillator();
     highLfo.frequency.value = 0.04;
     const highDepth = ctx.createGain();
@@ -116,6 +116,24 @@ export class Music {
     highBp.connect(highGain);
     highGain.connect(out);
 
+    // 更尖的边哨
+    const edge = this.loopNoise(ctx);
+    const edgeBp = ctx.createBiquadFilter();
+    edgeBp.type = 'bandpass';
+    edgeBp.frequency.value = 2600;
+    edgeBp.Q.value = 14;
+    const edgeGain = ctx.createGain();
+    edgeGain.gain.value = 0.08;
+    const edgeLfo = ctx.createOscillator();
+    edgeLfo.frequency.value = 0.05;
+    const edgeDepth = ctx.createGain();
+    edgeDepth.gain.value = 220;
+    edgeLfo.connect(edgeDepth);
+    edgeDepth.connect(edgeBp.frequency);
+    edgeLfo.start();
+    edge.connect(edgeBp);
+    edgeBp.connect(edgeGain);
+    edgeGain.connect(out);
     // 低频风身
     const body = this.loopNoise(ctx);
     const bodyLp = ctx.createBiquadFilter();
@@ -123,7 +141,7 @@ export class Music {
     bodyLp.frequency.value = 320;
     bodyLp.Q.value = 0.8;
     const bodyGain = ctx.createGain();
-    bodyGain.gain.value = 0.18;
+    bodyGain.gain.value = 0.12;
     body.connect(bodyLp);
     bodyLp.connect(bodyGain);
     bodyGain.connect(out);
@@ -147,7 +165,7 @@ export class Music {
     const dur = 2.5 + Math.random() * 2.5;
     const peak = 0.14 + Math.random() * 0.1;
     const startFreq = 260 + Math.random() * 180;
-    const topFreq = 700 + Math.random() * 600;
+    const topFreq = 1100 + Math.random() * 900;
 
     const src = ctx.createBufferSource();
     src.buffer = this.makeNoise(ctx, 4);
@@ -155,7 +173,7 @@ export class Music {
 
     const bp = ctx.createBiquadFilter();
     bp.type = 'bandpass';
-    bp.Q.value = 3.5 + Math.random() * 3;
+    bp.Q.value = 5 + Math.random() * 4;
     bp.frequency.setValueAtTime(startFreq, t);
     bp.frequency.linearRampToValueAtTime(topFreq, t + dur * 0.35);
     bp.frequency.linearRampToValueAtTime(startFreq * 1.1, t + dur);
